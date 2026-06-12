@@ -242,6 +242,24 @@
       };
     }
 
+    function onNodeClick(params) {
+      if (!params.nodes || !params.nodes.length) return;
+      const id = params.nodes[0];
+      const node = nodesDS.get(id);
+      if (!node) return;
+      if (id === "you") {
+        document.getElementById("pknown").value = "";
+        document.getElementById("addStatus").textContent = "Adding a contact you know directly. Enter a name.";
+      } else if (id.indexOf("person:") === 0) {
+        document.getElementById("pknown").value = node.label;
+        document.getElementById("addStatus").textContent =
+          "Adding someone " + node.label + " knows. Enter a name.";
+      } else {
+        return;
+      }
+      document.getElementById("pname").focus();
+    }
+
     async function loadGraph() {
       const graph = await api("/graph");
       if (!network) {
@@ -249,6 +267,7 @@
         edgesDS = new vis.DataSet(graph.edges.map(toVisEdge));
         network = new vis.Network(document.getElementById("cy"),
           { nodes: nodesDS, edges: edgesDS }, options);
+        network.on("click", onNodeClick);
         return;
       }
       // add only what is new so existing nodes keep drifting from where they are
