@@ -111,6 +111,10 @@
       <input id="introCompany" placeholder="who can get me into... (company)" onkeydown="if(event.key==='Enter')findPaths()" />
       <button onclick="findPaths()">Find paths</button>
       <button class="secondary" onclick="syncGraph()">Sync</button>
+      <button class="secondary" onclick="reindexSearch()">Reindex search</button>
+      <input id="searchQuery" placeholder="search your network by meaning" onkeydown="if(event.key==='Enter')runSearch()" />
+      <button onclick="runSearch()">Search</button>
+      <span id="searchStatus" class="muted"></span>
       <span id="pathStatus" class="muted"></span>
       <span class="legend">
         <span><span class="dot" style="background:#10b981"></span>person</span>
@@ -306,6 +310,29 @@
 
     async function syncGraph() {
       try { await api("/graph/sync", { method: "POST" }); } catch (e) {}
+    }
+
+    async function reindexSearch() {
+      const status = document.getElementById("searchStatus");
+      status.textContent = "Reindexing...";
+      try {
+        const r = await api("/search/reindex", { method: "POST" });
+        status.textContent = "Indexed " + r.indexed + " people.";
+      } catch (e) { status.textContent = e.message || "Reindex failed."; }
+    }
+
+    async function runSearch() {
+      const q = document.getElementById("searchQuery").value.trim();
+      if (!q) return;
+      const status = document.getElementById("searchStatus");
+      status.textContent = "Searching...";
+      try {
+        const data = await api("/search?q=" + encodeURIComponent(q));
+        if (!data.results.length) { status.textContent = "No matches. Try Reindex first."; return; }
+        status.textContent = data.results
+          .map(function (r) { return r.name + (r.company ? " (" + r.company + ")" : ""); })
+          .join(", ");
+      } catch (e) { status.textContent = e.message || "Search failed."; }
     }
 
     async function findPaths() {
