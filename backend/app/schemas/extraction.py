@@ -14,6 +14,14 @@ class ExtractedPerson(BaseModel):
     note: Optional[str] = None
 
 
+class ExtractedRelationship(BaseModel):
+    from_person: str
+    to_person: str
+    relation_type: str = "knows"
+    note: Optional[str] = None
+
+
 class ExtractionResult(BaseModel):
     companies: list[ExtractedCompany] = []
     people: list[ExtractedPerson] = []
+    relationships: list[ExtractedRelationship] = []

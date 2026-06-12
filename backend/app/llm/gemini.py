@@ -12,9 +12,12 @@ EXTRACTION_PROMPT = (
     "Identify the people mentioned and the companies they are associated with. "
     "For each person, capture their name, their job title if stated, the company "
     "they are associated with if stated, and a short note about anything relevant "
-    "they said or offered. List each distinct company by name. Only include "
-    "information that is actually present in the message. Do not invent people or "
-    "companies.\n\nMessage:\n"
+    "they said or offered. List each distinct company by name. "
+    "Also capture relationships between people: if one person knows, referred, or "
+    "offered to introduce you to another person, record it as a relationship with "
+    "from_person, to_person, and relation_type set to one of knows, referred, or "
+    "can_intro. Only include information that is actually present in the message. "
+    "Do not invent people, companies, or relationships.\n\nMessage:\n"
 )
 
 
