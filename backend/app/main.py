@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from app.database import Base, engine
-from app.models import user  # noqa: F401  registers the User table
+import app.models  # noqa: F401  registers all model tables
 from app.routers import auth, health, paste
 
 Base.metadata.create_all(bind=engine)
