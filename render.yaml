@@ -1,0 +1,29 @@
+# Render Blueprint for Kith. Create a Render account, then New + Blueprint and
+# point it at this repo. Render reads this file and provisions the web service.
+# Set the secret env vars (marked sync:false) in the Render dashboard after the
+# first deploy: GEMINI_API_KEY and the NEO4J_* values from backend/.env.
+services:
+  - type: web
+    name: kith
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:///./kith.db
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: NEO4J_URI
+        sync: false
+      - key: NEO4J_USERNAME
+        sync: false
+      - key: NEO4J_PASSWORD
+        sync: false
+      - key: NEO4J_DATABASE
+        sync: false

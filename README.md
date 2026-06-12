@@ -63,3 +63,29 @@ rate limit, so it takes a couple of minutes):
 This prints per-case and aggregate precision, recall, and F1 for people, companies,
 and relationships. Add harder cases to `backend/evals/cases.py` to find where the
 extractor breaks.
+
+## Semantic search (Qdrant)
+
+People are embedded with Gemini and stored in Qdrant (local on-disk mode at
+`backend/qdrant_local`, no server needed). In the Map tab, click "Reindex search"
+once, then search your network by meaning ("designer", "fintech", "recruiter").
+
+## Deploy (Render, free)
+
+The app is one FastAPI service that serves both the API and the frontend, so it
+deploys as a single web service. Neo4j stays on Aura and Gemini stays an API call.
+
+1. Push this repo to GitHub (already done).
+2. Create a free account at render.com, choose New, then Blueprint, and select this
+   repo. Render reads `render.yaml` and provisions the `kith` web service.
+3. After the first deploy, open the service, go to Environment, and set the secret
+   values from `backend/.env`: `GEMINI_API_KEY`, `NEO4J_URI`, `NEO4J_USERNAME`,
+   `NEO4J_PASSWORD`, `NEO4J_DATABASE`. `JWT_SECRET` is generated automatically and
+   `DATABASE_URL` defaults to SQLite.
+4. Open the live URL (`https://kith-XXXX.onrender.com`), register, and use it.
+
+Notes: the free tier sleeps after inactivity (first request after a sleep is slow)
+and its disk is ephemeral, so SQLite and the Qdrant index reset on a redeploy. For
+durable data, set `DATABASE_URL` to a free Neon Postgres connection string
+(`postgresql+psycopg2://...`); the relational data then persists, and the search
+index rebuilds with one "Reindex search" click.
