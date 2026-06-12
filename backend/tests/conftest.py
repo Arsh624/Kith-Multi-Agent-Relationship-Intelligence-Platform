@@ -4,6 +4,8 @@ os.environ["DATABASE_URL"] = "sqlite:///./test_kith.db"
 os.environ["JWT_SECRET"] = "test-secret"
 os.environ["JWT_ALGORITHM"] = "HS256"
 os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "60"
+os.environ["GEMINI_API_KEY"] = "test-key"
+os.environ["GEMINI_MODEL"] = "gemini-2.5-flash"
 
 import pytest
 from fastapi.testclient import TestClient
