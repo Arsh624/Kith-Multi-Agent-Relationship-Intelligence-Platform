@@ -1,12 +1,17 @@
 import sys
+import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import settings
+from app.llm.errors import LLMUnavailableError
 from app.llm.gemini import GeminiClient
 from evals.cases import CASES
 from evals.scorer import aggregate, score_case
+
+# Gemini free tier allows about 5 requests per minute, so pace the calls.
+DELAY_SECONDS = 13
 
 
 def main() -> None:
@@ -15,7 +20,13 @@ def main() -> None:
     )
     scores = []
     for index, case in enumerate(CASES, start=1):
-        actual = client.extract_entities(case.text)
+        if index > 1:
+            time.sleep(DELAY_SECONDS)
+        try:
+            actual = client.extract_entities(case.text)
+        except LLMUnavailableError as exc:
+            print(f"Case {index:2d}: skipped (model unavailable: {exc})")
+            continue
         case_scores = score_case(case, actual)
         scores.append(case_scores)
         print(
@@ -26,7 +37,7 @@ def main() -> None:
         )
 
     overall = aggregate(scores)
-    print("\nAggregate:")
+    print(f"\nAggregate over {len(scores)} of {len(CASES)} cases:")
     for category, score in overall.items():
         print(
             f"  {category:14s} precision={score.precision:.2f} "

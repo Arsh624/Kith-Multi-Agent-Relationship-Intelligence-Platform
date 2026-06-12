@@ -42,3 +42,24 @@ PowerShell:
 Then open http://localhost:8000 in your browser. Register, paste an email or
 message, and watch the network map fill in. The Gemini key in `backend/.env`
 powers the extraction.
+
+## Observability and evals
+
+Extraction is traced through a tracer that is a no-op unless Langfuse keys are set.
+To enable Langfuse Cloud (free), add to `backend/.env`:
+
+    LANGFUSE_PUBLIC_KEY=pk-...
+    LANGFUSE_SECRET_KEY=sk-...
+    LANGFUSE_HOST=https://cloud.langfuse.com
+
+With keys set, each paste creates a trace in the Langfuse dashboard.
+
+Run the extraction evals (uses the real Gemini key, paced under the free-tier
+rate limit, so it takes a couple of minutes):
+
+    cd backend
+    .\.venv\Scripts\python.exe -m evals.run_evals
+
+This prints per-case and aggregate precision, recall, and F1 for people, companies,
+and relationships. Add harder cases to `backend/evals/cases.py` to find where the
+extractor breaks.

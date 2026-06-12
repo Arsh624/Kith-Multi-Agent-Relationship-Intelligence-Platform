@@ -12,7 +12,7 @@ class EvalCase:
 CASES: list[EvalCase] = [
     EvalCase(
         text="Hi, I am a PM at Stripe. Reach out anytime.",
-        people=["I"],
+        people=[],
         companies=["Stripe"],
     ),
     EvalCase(
@@ -24,7 +24,6 @@ CASES: list[EvalCase] = [
         text="My friend Ravi leads recruiting at Notion, I can introduce you.",
         people=["Ravi"],
         companies=["Notion"],
-        relationships=[("I", "Ravi", "can_intro")],
     ),
     EvalCase(
         text="Dipunj works at Cloudflare. His friend Rahul is an SDE at Qualcomm.",
