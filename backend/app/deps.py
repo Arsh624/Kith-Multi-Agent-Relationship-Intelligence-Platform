@@ -12,6 +12,8 @@ from app.llm.base import LLMClient
 from app.llm.gemini import GeminiClient
 from app.models.user import User
 from app.observability.tracer import get_tracer
+from app.search.embedder import Embedder, GeminiEmbedder
+from app.search.store import QdrantVectorStore, VectorStore
 from app.security import decode_access_token
 
 bearer_scheme = HTTPBearer()
@@ -58,3 +60,18 @@ def _build_graph_store() -> GraphStore:
 
 def get_graph_store() -> GraphStore:
     return _build_graph_store()
+
+
+def get_embedder() -> Embedder:
+    return GeminiEmbedder(
+        api_key=settings.gemini_api_key, model=settings.embedding_model
+    )
+
+
+@lru_cache(maxsize=1)
+def _build_vector_store() -> VectorStore:
+    return QdrantVectorStore(path=settings.qdrant_path)
+
+
+def get_vector_store() -> VectorStore:
+    return _build_vector_store()
