@@ -2,7 +2,10 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
+from app.llm.base import LLMClient
+from app.llm.gemini import GeminiClient
 from app.models.user import User
 from app.security import decode_access_token
 
@@ -24,3 +27,7 @@ def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
     return user
+
+
+def get_llm_client() -> LLMClient:
+    return GeminiClient(api_key=settings.gemini_api_key, model=settings.gemini_model)

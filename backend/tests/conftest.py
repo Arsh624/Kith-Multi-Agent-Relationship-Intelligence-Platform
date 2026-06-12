@@ -14,11 +14,13 @@ from fastapi.testclient import TestClient
 @pytest.fixture()
 def client():
     db_path = "test_kith.db"
-    if os.path.exists(db_path):
-        os.remove(db_path)
 
     from app.database import Base, engine
     from app.models import user  # noqa: F401  registers the table
+
+    engine.dispose()
+    if os.path.exists(db_path):
+        os.remove(db_path)
 
     Base.metadata.create_all(bind=engine)
 
@@ -36,11 +38,13 @@ def client():
 @pytest.fixture()
 def db_session():
     db_path = "test_kith.db"
-    if os.path.exists(db_path):
-        os.remove(db_path)
 
     from app.database import Base, SessionLocal, engine
     import app.models  # noqa: F401  registers all tables
+
+    engine.dispose()
+    if os.path.exists(db_path):
+        os.remove(db_path)
 
     Base.metadata.create_all(bind=engine)
     session = SessionLocal()
