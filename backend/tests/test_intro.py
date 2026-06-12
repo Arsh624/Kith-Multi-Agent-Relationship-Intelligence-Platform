@@ -84,3 +84,44 @@ def test_build_snapshot_collects_user_graph(db_session):
     assert {c.name for c in snapshot.companies} == {"Cloudflare", "Qualcomm"}
     assert len(snapshot.connections) == 1
     assert snapshot.connections[0].relation_type == "knows"
+
+
+from app.deps import get_graph_store
+from app.main import app
+
+
+def _register(client, email="i@example.com"):
+    response = client.post(
+        "/auth/register", json={"email": email, "password": "hunter2"}
+    )
+    return response.json()["access_token"]
+
+
+def test_sync_then_intro_paths_endpoint(client):
+    token = _register(client)
+    headers = {"Authorization": f"Bearer {token}"}
+    client.post("/people", headers=headers, json={"name": "Dipunj", "company": "Cloudflare"})
+    client.post(
+        "/people",
+        headers=headers,
+        json={"name": "Rahul", "company": "Qualcomm", "known_through": "Dipunj"},
+    )
+
+    store = FakeGraphStore()
+    app.dependency_overrides[get_graph_store] = lambda: store
+    try:
+        sync = client.post("/graph/sync", headers=headers)
+        assert sync.status_code == 200
+        assert sync.json()["people"] == 2
+
+        response = client.get("/intro-paths?company=Qualcomm", headers=headers)
+        assert response.status_code == 200
+        paths = response.json()["paths"]
+        assert ["You", "Dipunj", "Rahul", "Qualcomm"] in paths
+    finally:
+        app.dependency_overrides.pop(get_graph_store, None)
+
+
+def test_intro_paths_requires_auth(client):
+    response = client.get("/intro-paths?company=Qualcomm")
+    assert response.status_code in (401, 403)

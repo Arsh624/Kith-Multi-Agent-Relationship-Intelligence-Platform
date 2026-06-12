@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
+from app.graph.base import GraphStore
+from app.graph.neo4j_store import Neo4jGraphStore
 from app.llm.base import LLMClient
 from app.llm.gemini import GeminiClient
 from app.models.user import User
@@ -37,4 +39,13 @@ def get_llm_client() -> LLMClient:
         api_key=settings.gemini_api_key,
         model=settings.gemini_model,
         fallback_models=fallbacks,
+    )
+
+
+def get_graph_store() -> GraphStore:
+    return Neo4jGraphStore(
+        uri=settings.neo4j_uri,
+        username=settings.neo4j_username,
+        password=settings.neo4j_password,
+        database=settings.neo4j_database,
     )
