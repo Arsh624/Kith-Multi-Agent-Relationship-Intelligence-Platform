@@ -1,3 +1,6 @@
+import pytest
+
+from app.llm.errors import LLMUnavailableError
 from app.llm.gemini import GeminiClient
 from app.schemas.extraction import (
     ExtractedCompany,
@@ -51,3 +54,47 @@ def test_gemini_client_handles_none_parsed():
     result = client.extract_entities("text")
 
     assert result == ExtractionResult()
+
+
+class _FlakyModels:
+    def __init__(self, fail_models, parsed):
+        self._fail_models = set(fail_models)
+        self._parsed = parsed
+        self.tried = []
+
+    def generate_content(self, **kwargs):
+        model = kwargs["model"]
+        self.tried.append(model)
+        if model in self._fail_models:
+            raise RuntimeError("model overloaded")
+        return _FakeResponse(self._parsed)
+
+
+class _FlakyClient:
+    def __init__(self, models):
+        self.models = models
+
+
+def test_gemini_client_falls_back_to_next_model_on_error():
+    expected = ExtractionResult(
+        companies=[ExtractedCompany(name="Stripe")], people=[]
+    )
+    client = GeminiClient(
+        api_key="test", model="primary", fallback_models=["backup"]
+    )
+    client._client = _FlakyClient(_FlakyModels(["primary"], expected))
+
+    result = client.extract_entities("text")
+
+    assert result == expected
+    assert client._client.models.tried == ["primary", "backup"]
+
+
+def test_gemini_client_raises_when_all_models_fail():
+    client = GeminiClient(
+        api_key="test", model="primary", fallback_models=["backup"]
+    )
+    client._client = _FlakyClient(_FlakyModels(["primary", "backup"], None))
+
+    with pytest.raises(LLMUnavailableError):
+        client.extract_entities("text")

@@ -90,7 +90,16 @@
       const t = token();
       if (t) options.headers["Authorization"] = "Bearer " + t;
       const res = await fetch(path, options);
-      if (!res.ok) { throw new Error((await res.text()) || String(res.status)); }
+      if (!res.ok) {
+        let message = "Request failed (" + res.status + ")";
+        try {
+          const data = await res.json();
+          if (data && data.detail) {
+            message = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail);
+          }
+        } catch (err) {}
+        throw new Error(message);
+      }
       return res.json();
     }
 
@@ -154,7 +163,7 @@
         status.textContent = "Added " + result.people.length + " people and " + result.companies.length + " companies.";
         document.getElementById("text").value = "";
         loadGraph();
-      } catch (e) { status.textContent = "Extraction failed."; }
+      } catch (e) { status.textContent = e.message || "Extraction failed."; }
     }
 
     const options = {

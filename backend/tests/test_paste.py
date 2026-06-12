@@ -57,3 +57,26 @@ def test_paste_requires_auth(client):
         "/paste", json={"source": "email", "text": "hello"}
     )
     assert response.status_code in (401, 403)
+
+
+class _UnavailableLLM:
+    def extract_entities(self, text):
+        from app.llm.errors import LLMUnavailableError
+
+        raise LLMUnavailableError("overloaded")
+
+
+def test_paste_returns_503_when_model_unavailable(client):
+    token = _auth_token(client)
+    app.dependency_overrides[get_llm_client] = lambda: _UnavailableLLM()
+    try:
+        response = client.post(
+            "/paste",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"source": "email", "text": "anything"},
+        )
+    finally:
+        app.dependency_overrides.pop(get_llm_client, None)
+
+    assert response.status_code == 503
+    assert "busy" in response.json()["detail"].lower()

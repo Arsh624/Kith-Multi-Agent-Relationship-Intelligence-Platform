@@ -30,4 +30,11 @@ def get_current_user(
 
 
 def get_llm_client() -> LLMClient:
-    return GeminiClient(api_key=settings.gemini_api_key, model=settings.gemini_model)
+    fallbacks = (
+        [settings.gemini_fallback_model] if settings.gemini_fallback_model else []
+    )
+    return GeminiClient(
+        api_key=settings.gemini_api_key,
+        model=settings.gemini_model,
+        fallback_models=fallbacks,
+    )

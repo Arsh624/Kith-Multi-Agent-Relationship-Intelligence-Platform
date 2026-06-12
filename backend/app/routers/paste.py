@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import get_current_user, get_llm_client
 from app.llm.base import LLMClient
+from app.llm.errors import LLMUnavailableError
 from app.models.user import User
 from app.schemas.paste import CompanyOut, PasteRequest, PasteResponse, PersonOut
 from app.services.ingest import ingest_message
@@ -18,9 +19,15 @@ def paste(
     current_user: User = Depends(get_current_user),
     llm: LLMClient = Depends(get_llm_client),
 ):
-    result = ingest_message(
-        db, current_user.id, payload.source, payload.text, llm
-    )
+    try:
+        result = ingest_message(
+            db, current_user.id, payload.source, payload.text, llm
+        )
+    except LLMUnavailableError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The extraction model is busy right now. Please try again in a few seconds.",
+        )
     company_name_by_id = {c.id: c.name for c in result.companies}
     companies = [CompanyOut(id=c.id, name=c.name) for c in result.companies]
     people = [

@@ -1,7 +1,10 @@
+from typing import Optional
+
 from google import genai
 from google.genai import types
 
 from app.llm.base import LLMClient
+from app.llm.errors import LLMUnavailableError
 from app.schemas.extraction import ExtractionResult
 
 EXTRACTION_PROMPT = (
@@ -16,20 +19,29 @@ EXTRACTION_PROMPT = (
 
 
 class GeminiClient(LLMClient):
-    def __init__(self, api_key: str, model: str) -> None:
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        fallback_models: Optional[list[str]] = None,
+    ) -> None:
         self._client = genai.Client(api_key=api_key)
-        self._model = model
+        self._models = [model] + list(fallback_models or [])
 
     def extract_entities(self, text: str) -> ExtractionResult:
-        response = self._client.models.generate_content(
-            model=self._model,
-            contents=EXTRACTION_PROMPT + text,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=ExtractionResult,
-            ),
-        )
-        result = response.parsed
-        if result is None:
-            return ExtractionResult()
-        return result
+        last_error: Optional[Exception] = None
+        for model in self._models:
+            try:
+                response = self._client.models.generate_content(
+                    model=model,
+                    contents=EXTRACTION_PROMPT + text,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        response_schema=ExtractionResult,
+                    ),
+                )
+                result = response.parsed
+                return result if result is not None else ExtractionResult()
+            except Exception as exc:  # noqa: BLE001  external API, fall back then surface
+                last_error = exc
+        raise LLMUnavailableError(str(last_error))
