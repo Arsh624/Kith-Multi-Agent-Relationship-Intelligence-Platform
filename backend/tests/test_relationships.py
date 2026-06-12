@@ -84,3 +84,17 @@ def test_add_person_known_through_creates_connection(client):
         if e["label"] == "KNOWS"
     ]
     assert ("Dipunj", "Rahul") in knows_edges
+
+
+def test_add_person_known_through_unknown_returns_404(client):
+    register = client.post(
+        "/auth/register", json={"email": "k2@example.com", "password": "hunter2"}
+    )
+    headers = {"Authorization": f"Bearer {register.json()['access_token']}"}
+
+    response = client.post(
+        "/people",
+        headers=headers,
+        json={"name": "Rahul", "known_through": "Nonexistent"},
+    )
+    assert response.status_code == 404

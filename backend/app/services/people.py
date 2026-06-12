@@ -5,7 +5,11 @@ from sqlalchemy.orm import Session
 from app.models.person import Person
 from app.services.companies import get_or_create_company
 from app.services.connections import add_connection
-from app.services.resolver import resolve_person
+from app.services.resolver import find_person, resolve_person
+
+
+class KnownThroughNotFound(Exception):
+    """Raised when a known_through person name does not match an existing contact."""
 
 
 def add_person(
@@ -21,7 +25,9 @@ def add_person(
         if person.company_id is None:
             person.company_id = company.id
     if known_through:
-        introducer = resolve_person(db, user_id, known_through)
+        introducer = find_person(db, user_id, known_through)
+        if introducer is None:
+            raise KnownThroughNotFound(known_through)
         add_connection(db, user_id, introducer.id, person.id, "knows")
     db.commit()
     db.refresh(person)
