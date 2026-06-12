@@ -58,6 +58,7 @@
     <div class="toolbar">
       <input id="pname" placeholder="Add a person (name)" onkeydown="if(event.key==='Enter')addPerson()" />
       <input id="pcompany" placeholder="company (optional)" onkeydown="if(event.key==='Enter')addPerson()" />
+      <input id="pknown" placeholder="known through (optional)" onkeydown="if(event.key==='Enter')addPerson()" />
       <button onclick="addPerson()">Add</button>
       <button class="ghost" onclick="togglePaste()">Import from a message</button>
       <span id="addStatus" class="muted"></span>
@@ -141,16 +142,22 @@
     async function addPerson() {
       const name = document.getElementById("pname").value.trim();
       const company = document.getElementById("pcompany").value.trim();
+      const knownThrough = document.getElementById("pknown").value.trim();
       const status = document.getElementById("addStatus");
       if (!name) { status.textContent = "Enter a name."; return; }
       status.textContent = "Adding...";
       try {
-        await api("/people", { method: "POST", body: JSON.stringify({ name, company: company || null }) });
+        await api("/people", { method: "POST", body: JSON.stringify({
+          name: name,
+          company: company || null,
+          known_through: knownThrough || null,
+        }) });
         document.getElementById("pname").value = "";
         document.getElementById("pcompany").value = "";
+        document.getElementById("pknown").value = "";
         status.textContent = "";
         loadGraph();
-      } catch (e) { status.textContent = "Failed to add."; }
+      } catch (e) { status.textContent = e.message || "Failed to add."; }
     }
 
     async function paste() {
@@ -199,6 +206,16 @@
 
     let network, nodesDS, edgesDS;
     function toVisNode(n) {
+      if (n.type === "you") {
+        return {
+          id: n.id,
+          label: n.label,
+          shape: "dot",
+          size: 28,
+          color: { background: "#f59e0b", border: "#fcd34d",
+                   highlight: { background: "#fbbf24", border: "#fde68a" } },
+        };
+      }
       const isCompany = n.type === "company";
       return {
         id: n.id,
@@ -213,7 +230,16 @@
 
     function edgeId(e) { return e.source + "->" + e.target + ":" + e.label; }
     function toVisEdge(e) {
-      return { id: edgeId(e), from: e.source, to: e.target, label: e.label };
+      const isWork = e.label === "WORKS_AT";
+      return {
+        id: edgeId(e),
+        from: e.source,
+        to: e.target,
+        label: e.label,
+        color: { color: isWork ? "#3b4862" : "#0e7490",
+                 highlight: "#94a3b8", hover: "#64748b" },
+        dashes: isWork ? false : [6, 4],
+      };
     }
 
     async function loadGraph() {
