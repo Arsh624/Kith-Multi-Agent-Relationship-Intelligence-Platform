@@ -1,3 +1,5 @@
+from functools import lru_cache
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
@@ -42,10 +44,15 @@ def get_llm_client() -> LLMClient:
     )
 
 
-def get_graph_store() -> GraphStore:
+@lru_cache(maxsize=1)
+def _build_graph_store() -> GraphStore:
     return Neo4jGraphStore(
         uri=settings.neo4j_uri,
         username=settings.neo4j_username,
         password=settings.neo4j_password,
         database=settings.neo4j_database,
     )
+
+
+def get_graph_store() -> GraphStore:
+    return _build_graph_store()

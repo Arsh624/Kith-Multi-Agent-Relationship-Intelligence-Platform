@@ -22,7 +22,11 @@ class Neo4jGraphStore(GraphStore):
 
     @staticmethod
     def _rebuild(tx, user_id, snapshot, incoming):
-        tx.run("MATCH (n {user_id: $uid}) DETACH DELETE n", uid=user_id)
+        tx.run(
+            "MATCH (n) WHERE n.user_id = $uid "
+            "AND (n:You OR n:Person OR n:Company) DETACH DELETE n",
+            uid=user_id,
+        )
         tx.run("MERGE (y:You {user_id: $uid}) SET y.name = 'You'", uid=user_id)
         for company in snapshot.companies:
             tx.run(
