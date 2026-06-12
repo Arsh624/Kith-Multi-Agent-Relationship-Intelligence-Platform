@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kith</title>
+  <script src="https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; color: #1a1a1a; }
+    header { padding: 12px 20px; background: #0f172a; color: #fff;
+             display: flex; justify-content: space-between; align-items: center; }
+    header h1 { font-size: 18px; margin: 0; }
+    #auth, #app { padding: 20px; }
+    #app { display: none; }
+    input, textarea, button { font: inherit; padding: 8px; margin: 4px 0; }
+    input, textarea { width: 100%; box-sizing: border-box;
+                      border: 1px solid #cbd5e1; border-radius: 6px; }
+    button { background: #2563eb; color: #fff; border: none;
+             border-radius: 6px; cursor: pointer; padding: 8px 14px; }
+    button.secondary { background: #64748b; }
+    .row { display: flex; gap: 20px; align-items: flex-start; }
+    .panel { flex: 1; }
+    #cy { height: 70vh; border: 1px solid #e2e8f0; border-radius: 8px;
+          background: #f8fafc; }
+    .muted { color: #64748b; font-size: 13px; }
+    .error { color: #dc2626; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kith</h1>
+    <button id="logout" class="secondary" style="display:none" onclick="logout()">Log out</button>
+  </header>
+
+  <div id="auth">
+    <h2>Sign in</h2>
+    <input id="email" type="email" placeholder="email" />
+    <input id="password" type="password" placeholder="password" />
+    <div>
+      <button onclick="login()">Log in</button>
+      <button class="secondary" onclick="register()">Register</button>
+    </div>
+    <p id="authError" class="error"></p>
+  </div>
+
+  <div id="app">
+    <div class="row">
+      <div class="panel">
+        <h2>Paste a message</h2>
+        <input id="source" placeholder="source (email, linkedin, ...)" value="email" />
+        <textarea id="text" rows="8" placeholder="Paste an email or message here..."></textarea>
+        <button onclick="paste()">Extract</button>
+        <p id="pasteStatus" class="muted"></p>
+      </div>
+      <div class="panel">
+        <h2>Your network</h2>
+        <div id="cy"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function token() { return localStorage.getItem("kith_token"); }
+    function setToken(t) { localStorage.setItem("kith_token", t); }
+    function clearToken() { localStorage.removeItem("kith_token"); }
+
+    async function api(path, options) {
+      options = options || {};
+      options.headers = Object.assign(
+        { "Content-Type": "application/json" }, options.headers || {}
+      );
+      const t = token();
+      if (t) options.headers["Authorization"] = "Bearer " + t;
+      const res = await fetch(path, options);
+      if (!res.ok) {
+        const detail = await res.text();
+        throw new Error(detail || String(res.status));
+      }
+      return res.json();
+    }
+
+    async function register() { await auth("/auth/register"); }
+    async function login() { await auth("/auth/login"); }
+
+    async function auth(path) {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      document.getElementById("authError").textContent = "";
+      try {
+        const data = await api(path, {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+        });
+        setToken(data.access_token);
+        showApp();
+      } catch (e) {
+        document.getElementById("authError").textContent =
+          "Could not authenticate. Check your details.";
+      }
+    }
+
+    function logout() {
+      clearToken();
+      document.getElementById("app").style.display = "none";
+      document.getElementById("auth").style.display = "block";
+      document.getElementById("logout").style.display = "none";
+    }
+
+    function showApp() {
+      document.getElementById("auth").style.display = "none";
+      document.getElementById("app").style.display = "block";
+      document.getElementById("logout").style.display = "inline-block";
+      loadGraph();
+    }
+
+    async function paste() {
+      const source = document.getElementById("source").value;
+      const text = document.getElementById("text").value;
+      const status = document.getElementById("pasteStatus");
+      status.textContent = "Extracting...";
+      try {
+        const result = await api("/paste", {
+          method: "POST",
+          body: JSON.stringify({ source, text }),
+        });
+        status.textContent =
+          "Added " + result.people.length + " people and " +
+          result.companies.length + " companies.";
+        document.getElementById("text").value = "";
+        loadGraph();
+      } catch (e) {
+        status.textContent = "Extraction failed.";
+      }
+    }
+
+    let cy;
+    async function loadGraph() {
+      const graph = await api("/graph");
+      const elements = [];
+      for (const n of graph.nodes) {
+        elements.push({ data: { id: n.id, label: n.label, type: n.type } });
+      }
+      for (const e of graph.edges) {
+        elements.push({ data: { source: e.source, target: e.target, label: e.label } });
+      }
+      if (!cy) {
+        cy = cytoscape({
+          container: document.getElementById("cy"),
+          elements: elements,
+          style: [
+            { selector: "node", style: {
+              "label": "data(label)", "font-size": "11px",
+              "text-valign": "center", "color": "#fff",
+              "text-outline-width": 2, "text-outline-color": "#334155" } },
+            { selector: 'node[type="company"]', style: {
+              "background-color": "#2563eb", "shape": "round-rectangle",
+              "width": 70, "height": 30 } },
+            { selector: 'node[type="person"]', style: {
+              "background-color": "#10b981" } },
+            { selector: "edge", style: {
+              "label": "data(label)", "font-size": "9px", "color": "#64748b",
+              "width": 1, "line-color": "#cbd5e1",
+              "target-arrow-color": "#cbd5e1", "target-arrow-shape": "triangle",
+              "curve-style": "bezier" } }
+          ],
+          layout: { name: "cose", animate: false }
+        });
+      } else {
+        cy.elements().remove();
+        cy.add(elements);
+        cy.layout({ name: "cose", animate: false }).run();
+      }
+    }
+
+    if (token()) { showApp(); }
+  </script>
+</body>
+</html>
