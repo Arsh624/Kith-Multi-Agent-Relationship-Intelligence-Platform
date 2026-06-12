@@ -54,6 +54,13 @@
     .badge.low { background: #2563eb; }
     .deadline { color: var(--muted); font-size: 12px; }
     .taskdel { background: transparent; color: var(--muted); padding: 2px 6px; }
+    #personCard { position: fixed; top: 150px; right: 24px; width: 280px;
+                  background: var(--panel); border: 1px solid var(--line);
+                  border-radius: 12px; padding: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.45); }
+    #personCard input { width: 100%; }
+    .cardhead { display: flex; justify-content: space-between; align-items: center; }
+    .cardlabel { font-size: 11px; color: var(--muted); display: block; margin-top: 8px; }
+    .cardactions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
   </style>
 </head>
 <body>
@@ -119,6 +126,27 @@
     </div>
 
     <div id="cy"></div>
+    <div id="personCard" style="display:none">
+      <div class="cardhead">
+        <strong id="cardName"></strong>
+        <button class="taskdel" onclick="closeCard()">close</button>
+      </div>
+      <div id="cardCompany" class="muted"></div>
+      <label class="cardlabel">Role</label>
+      <input id="cardTitle" placeholder="e.g. SDE1, Recruiter" />
+      <label class="cardlabel">Email</label>
+      <input id="cardEmail" placeholder="email" />
+      <label class="cardlabel">Phone</label>
+      <input id="cardPhone" placeholder="phone" />
+      <label class="cardlabel">LinkedIn</label>
+      <input id="cardLinkedin" placeholder="linkedin url" />
+      <div class="cardactions">
+        <button onclick="savePersonCard()">Save</button>
+        <button id="cardEmailBtn" class="secondary" onclick="emailPerson()">Email</button>
+        <button id="cardLinkedinBtn" class="secondary" onclick="openLinkedin()">LinkedIn</button>
+      </div>
+      <span id="cardStatus" class="muted"></span>
+    </div>
     </div>
   </div>
 
@@ -328,6 +356,57 @@
       },
     };
 
+    let cardPersonId = null;
+
+    async function openPersonCard(personId) {
+      cardPersonId = personId;
+      const d = await api("/people/" + personId);
+      document.getElementById("cardName").textContent = d.name;
+      document.getElementById("cardCompany").textContent = d.company || "";
+      document.getElementById("cardTitle").value = d.title || "";
+      document.getElementById("cardEmail").value = d.email || "";
+      document.getElementById("cardPhone").value = d.phone || "";
+      document.getElementById("cardLinkedin").value = d.linkedin || "";
+      document.getElementById("cardEmailBtn").style.display = d.email ? "inline-block" : "none";
+      document.getElementById("cardLinkedinBtn").style.display = d.linkedin ? "inline-block" : "none";
+      document.getElementById("cardStatus").textContent = "";
+      document.getElementById("personCard").style.display = "block";
+    }
+
+    function closeCard() {
+      document.getElementById("personCard").style.display = "none";
+      cardPersonId = null;
+    }
+
+    async function savePersonCard() {
+      if (!cardPersonId) return;
+      const body = {
+        title: document.getElementById("cardTitle").value,
+        email: document.getElementById("cardEmail").value,
+        phone: document.getElementById("cardPhone").value,
+        linkedin: document.getElementById("cardLinkedin").value,
+      };
+      document.getElementById("cardStatus").textContent = "Saving...";
+      try {
+        await api("/people/" + cardPersonId, { method: "PATCH", body: JSON.stringify(body) });
+        document.getElementById("cardStatus").textContent = "Saved.";
+        openPersonCard(cardPersonId);
+      } catch (e) { document.getElementById("cardStatus").textContent = e.message || "Save failed."; }
+    }
+
+    function emailPerson() {
+      const email = document.getElementById("cardEmail").value.trim();
+      if (!email) return;
+      window.open("https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(email), "_blank");
+    }
+
+    function openLinkedin() {
+      let url = document.getElementById("cardLinkedin").value.trim();
+      if (!url) return;
+      if (url.indexOf("http") !== 0) url = "https://" + url;
+      window.open(url, "_blank");
+    }
+
     let network, nodesDS, edgesDS;
     function toVisNode(n) {
       if (n.type === "you") {
@@ -381,6 +460,7 @@
         document.getElementById("pknown").value = node.label;
         status.textContent =
           "Adding someone " + node.label + " knows. Or use Delete selected to remove " + node.label + ".";
+        openPersonCard(id.split(":")[1]);
       } else if (id.indexOf("company:") === 0) {
         status.textContent =
           "Selected " + node.label + ". Use Delete selected to remove it.";
