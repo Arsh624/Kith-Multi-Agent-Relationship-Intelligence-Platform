@@ -62,6 +62,10 @@
       <button onclick="addPerson()">Add</button>
       <button class="ghost" onclick="togglePaste()">Import from a message</button>
       <span id="addStatus" class="muted"></span>
+      <input id="introCompany" placeholder="who can get me into... (company)" onkeydown="if(event.key==='Enter')findPaths()" />
+      <button onclick="findPaths()">Find paths</button>
+      <button class="secondary" onclick="syncGraph()">Sync</button>
+      <span id="pathStatus" class="muted"></span>
       <span class="legend">
         <span><span class="dot" style="background:#10b981"></span>person</span>
         <span><span class="dot" style="background:#6366f1"></span>company</span>
@@ -157,6 +161,7 @@
         document.getElementById("pknown").value = "";
         status.textContent = "";
         loadGraph();
+        syncGraph();
       } catch (e) { status.textContent = e.message || "Failed to add."; }
     }
 
@@ -170,7 +175,29 @@
         status.textContent = "Added " + result.people.length + " people and " + result.companies.length + " companies.";
         document.getElementById("text").value = "";
         loadGraph();
+        syncGraph();
       } catch (e) { status.textContent = e.message || "Extraction failed."; }
+    }
+
+    async function syncGraph() {
+      try { await api("/graph/sync", { method: "POST" }); } catch (e) {}
+    }
+
+    async function findPaths() {
+      const company = document.getElementById("introCompany").value.trim();
+      const status = document.getElementById("pathStatus");
+      if (!company) { status.textContent = "Enter a company."; return; }
+      status.textContent = "Syncing and searching...";
+      try {
+        await api("/graph/sync", { method: "POST" });
+        const result = await api("/intro-paths?company=" + encodeURIComponent(company));
+        if (!result.paths.length) {
+          status.textContent = "No warm path to " + company + " found.";
+          return;
+        }
+        const lines = result.paths.map(function (p) { return p.join(" -> "); });
+        status.textContent = "Paths: " + lines.join("  |  ");
+      } catch (e) { status.textContent = e.message || "Search failed."; }
     }
 
     const options = {
