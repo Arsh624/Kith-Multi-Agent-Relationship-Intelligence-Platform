@@ -11,6 +11,7 @@ from app.graph.neo4j_store import Neo4jGraphStore
 from app.llm.base import LLMClient
 from app.llm.gemini import GeminiClient
 from app.models.user import User
+from app.observability.tracer import get_tracer
 from app.security import decode_access_token
 
 bearer_scheme = HTTPBearer()
@@ -41,6 +42,7 @@ def get_llm_client() -> LLMClient:
         api_key=settings.gemini_api_key,
         model=settings.gemini_model,
         fallback_models=fallbacks,
+        tracer=get_tracer(),
     )
 
 

@@ -1,3 +1,4 @@
+import time
 from typing import Optional
 
 from google import genai
@@ -5,6 +6,7 @@ from google.genai import types
 
 from app.llm.base import LLMClient
 from app.llm.errors import LLMUnavailableError
+from app.observability.tracer import NoopTracer, Tracer
 from app.schemas.extraction import ExtractionResult
 
 EXTRACTION_PROMPT = (
@@ -27,11 +29,14 @@ class GeminiClient(LLMClient):
         api_key: str,
         model: str,
         fallback_models: Optional[list[str]] = None,
+        tracer: Optional[Tracer] = None,
     ) -> None:
         self._client = genai.Client(api_key=api_key)
         self._models = [model] + list(fallback_models or [])
+        self._tracer = tracer or NoopTracer()
 
     def extract_entities(self, text: str) -> ExtractionResult:
+        start = time.perf_counter()
         last_error: Optional[Exception] = None
         for model in self._models:
             try:
@@ -44,7 +49,17 @@ class GeminiClient(LLMClient):
                     ),
                 )
                 result = response.parsed
-                return result if result is not None else ExtractionResult()
+                if result is None:
+                    result = ExtractionResult()
+                latency_ms = (time.perf_counter() - start) * 1000
+                self._tracer.record_extraction(
+                    text, model, result.model_dump_json(), latency_ms
+                )
+                return result
             except Exception as exc:  # noqa: BLE001  external API, fall back then surface
                 last_error = exc
+        latency_ms = (time.perf_counter() - start) * 1000
+        self._tracer.record_extraction(
+            text, self._models[-1], "", latency_ms, str(last_error)
+        )
         raise LLMUnavailableError(str(last_error))
