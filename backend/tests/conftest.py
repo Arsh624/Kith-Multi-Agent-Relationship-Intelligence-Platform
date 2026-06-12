@@ -10,6 +10,8 @@ os.environ["NEO4J_URI"] = "bolt://localhost:7687"
 os.environ["NEO4J_USERNAME"] = "neo4j"
 os.environ["NEO4J_PASSWORD"] = "test"
 os.environ["NEO4J_DATABASE"] = "neo4j"
+os.environ["LANGFUSE_PUBLIC_KEY"] = ""
+os.environ["LANGFUSE_SECRET_KEY"] = ""
 
 import pytest
 from fastapi.testclient import TestClient

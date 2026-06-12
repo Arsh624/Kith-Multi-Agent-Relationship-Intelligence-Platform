@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     neo4j_username: str = ""
     neo4j_password: str = ""
     neo4j_database: str = ""
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_host: str = "https://cloud.langfuse.com"
 
 
 settings = Settings()
