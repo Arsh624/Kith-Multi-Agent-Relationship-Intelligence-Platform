@@ -45,3 +45,51 @@ def test_get_contact_scoped_to_user(db_session):
     upsert_contact(db_session, owner.id, person.id, email="d@x.com")
     db_session.commit()
     assert get_contact(db_session, other.id, person.id) is None
+
+
+def _register(client, email="cc@example.com"):
+    response = client.post(
+        "/auth/register", json={"email": email, "password": "hunter2"}
+    )
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+def test_get_and_patch_person_detail(client):
+    headers = _register(client)
+    created = client.post(
+        "/people", headers=headers, json={"name": "Dipunj", "company": "Cloudflare"}
+    )
+    person_id = created.json()["id"]
+
+    detail = client.get(f"/people/{person_id}", headers=headers).json()
+    assert detail["name"] == "Dipunj"
+    assert detail["company"] == "Cloudflare"
+    assert detail["email"] is None
+
+    patched = client.patch(
+        f"/people/{person_id}",
+        headers=headers,
+        json={"title": "SDE1", "email": "d@x.com", "linkedin": "in/dipunj"},
+    )
+    assert patched.status_code == 200
+    body = patched.json()
+    assert body["title"] == "SDE1"
+    assert body["email"] == "d@x.com"
+    assert body["linkedin"] == "in/dipunj"
+
+    again = client.patch(
+        f"/people/{person_id}", headers=headers, json={"phone": "999"}
+    ).json()
+    assert again["phone"] == "999"
+    assert again["email"] == "d@x.com"
+    assert again["title"] == "SDE1"
+
+
+def test_get_person_detail_unknown_returns_404(client):
+    headers = _register(client)
+    assert client.get("/people/nope", headers=headers).status_code == 404
+
+
+def test_person_detail_requires_auth(client):
+    assert client.get("/people/x").status_code in (401, 403)
+    assert client.patch("/people/x", json={"title": "y"}).status_code in (401, 403)
