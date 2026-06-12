@@ -35,6 +35,25 @@
     h2 { font-weight: 600; }
     .legend { display: flex; gap: 16px; align-items: center; margin-left: auto; color: var(--muted); font-size: 12px; }
     .dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+    .tabs { display: flex; gap: 8px; padding: 10px 20px 0; }
+    .tab { background: #1e293b; color: var(--muted); border: none; border-radius: 8px 8px 0 0;
+           padding: 8px 16px; cursor: pointer; font-weight: 600; }
+    .tab.active { background: var(--panel); color: var(--text); }
+    #tasksView { padding: 20px; max-width: 760px; }
+    .taskform { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 18px; }
+    .taskform input, .taskform select { width: auto; }
+    .tasklist { list-style: none; padding: 0; margin: 0; }
+    .taskrow { display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+               border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px;
+               background: var(--panel); }
+    .taskrow.done .tasktitle { text-decoration: line-through; color: var(--muted); }
+    .tasktitle { flex: 1; }
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; color: #fff; }
+    .badge.high { background: #dc2626; }
+    .badge.medium { background: #d97706; }
+    .badge.low { background: #2563eb; }
+    .deadline { color: var(--muted); font-size: 12px; }
+    .taskdel { background: transparent; color: var(--muted); padding: 2px 6px; }
   </style>
 </head>
 <body>
@@ -55,6 +74,25 @@
   </div>
 
   <div id="app">
+    <div class="tabs">
+      <button id="tabTasks" class="tab active" onclick="showTab('tasks')">Good Morning</button>
+      <button id="tabMap" class="tab" onclick="showTab('map')">Map</button>
+    </div>
+    <div id="tasksView">
+      <h2 id="greeting">Good morning</h2>
+      <div class="taskform">
+        <input id="taskTitle" placeholder="Add a task" onkeydown="if(event.key==='Enter')addTask()" />
+        <input id="taskDeadline" type="date" />
+        <select id="taskPriority">
+          <option value="high">High</option>
+          <option value="medium" selected>Medium</option>
+          <option value="low">Low</option>
+        </select>
+        <button onclick="addTask()">Add task</button>
+      </div>
+      <ul id="taskList" class="tasklist"></ul>
+    </div>
+    <div id="mapView" style="display:none">
     <div class="toolbar">
       <input id="pname" placeholder="Add a person (name)" onkeydown="if(event.key==='Enter')addPerson()" />
       <input id="pcompany" placeholder="company (optional)" onkeydown="if(event.key==='Enter')addPerson()" />
@@ -81,6 +119,7 @@
     </div>
 
     <div id="cy"></div>
+    </div>
   </div>
 
   <script>
@@ -111,6 +150,60 @@
       return body ? JSON.parse(body) : null;
     }
 
+    function showTab(name) {
+      const tasks = name === "tasks";
+      document.getElementById("tasksView").style.display = tasks ? "block" : "none";
+      document.getElementById("mapView").style.display = tasks ? "none" : "block";
+      document.getElementById("tabTasks").classList.toggle("active", tasks);
+      document.getElementById("tabMap").classList.toggle("active", !tasks);
+      if (tasks) loadTasks();
+    }
+
+    async function loadTasks() {
+      const tasks = await api("/tasks");
+      const open = tasks.filter(function (t) { return !t.done; }).length;
+      document.getElementById("greeting").textContent =
+        "Good morning. You have " + open + " open task" + (open === 1 ? "" : "s") + ".";
+      const list = document.getElementById("taskList");
+      list.innerHTML = "";
+      for (const t of tasks) {
+        const li = document.createElement("li");
+        li.className = "taskrow" + (t.done ? " done" : "");
+        const deadline = t.deadline ? '<span class="deadline">due ' + t.deadline + "</span>" : "";
+        li.innerHTML =
+          '<input type="checkbox" ' + (t.done ? "checked" : "") + " />" +
+          '<span class="tasktitle"></span>' +
+          '<span class="badge ' + t.priority + '">' + t.priority + "</span>" +
+          deadline +
+          '<button class="taskdel">delete</button>';
+        li.querySelector(".tasktitle").textContent = t.title;
+        li.querySelector("input").onchange = function (e) { toggleTask(t.id, e.target.checked); };
+        li.querySelector(".taskdel").onclick = function () { deleteTask(t.id); };
+        list.appendChild(li);
+      }
+    }
+
+    async function addTask() {
+      const title = document.getElementById("taskTitle").value.trim();
+      if (!title) return;
+      const deadline = document.getElementById("taskDeadline").value || null;
+      const priority = document.getElementById("taskPriority").value;
+      await api("/tasks", { method: "POST", body: JSON.stringify({ title: title, deadline: deadline, priority: priority }) });
+      document.getElementById("taskTitle").value = "";
+      document.getElementById("taskDeadline").value = "";
+      loadTasks();
+    }
+
+    async function toggleTask(id, done) {
+      await api("/tasks/" + id, { method: "PATCH", body: JSON.stringify({ done: done }) });
+      loadTasks();
+    }
+
+    async function deleteTask(id) {
+      await api("/tasks/" + id, { method: "DELETE" });
+      loadTasks();
+    }
+
     async function register() { await auth("/auth/register"); }
     async function login() { await auth("/auth/login"); }
 
@@ -139,6 +232,7 @@
       document.getElementById("app").style.display = "block";
       document.getElementById("logout").style.display = "inline-block";
       loadGraph();
+      showTab("tasks");
     }
 
     function togglePaste() {
