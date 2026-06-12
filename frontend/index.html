@@ -170,10 +170,16 @@
       physics: {
         enabled: true,
         solver: "forceAtlas2Based",
-        forceAtlas2Based: { gravitationalConstant: -55, centralGravity: 0.012,
-                            springLength: 130, springConstant: 0.08, avoidOverlap: 1 },
-        stabilization: { enabled: true, iterations: 120 },
-        minVelocity: 0.35,
+        forceAtlas2Based: {
+          gravitationalConstant: -45,
+          centralGravity: 0.008,
+          springLength: 140,
+          springConstant: 0.045,
+          damping: 0.7,
+          avoidOverlap: 1,
+        },
+        stabilization: { enabled: true, iterations: 220, fit: true },
+        minVelocity: 0.75,
       },
       interaction: { hover: true, dragNodes: true, dragView: true, zoomView: true },
       nodes: {
@@ -204,21 +210,40 @@
       };
     }
 
+    function freeze() {
+      if (network) network.setOptions({ physics: { enabled: false } });
+    }
+
+    function edgeId(e) { return e.source + "->" + e.target + ":" + e.label; }
+    function toVisEdge(e) {
+      return { id: edgeId(e), from: e.source, to: e.target, label: e.label };
+    }
+
     async function loadGraph() {
       const graph = await api("/graph");
-      const nodes = graph.nodes.map(toVisNode);
-      const edges = graph.edges.map(function (e) {
-        return { from: e.source, to: e.target, label: e.label };
-      });
       if (!network) {
-        nodesDS = new vis.DataSet(nodes);
-        edgesDS = new vis.DataSet(edges);
+        nodesDS = new vis.DataSet(graph.nodes.map(toVisNode));
+        edgesDS = new vis.DataSet(graph.edges.map(toVisEdge));
         network = new vis.Network(document.getElementById("cy"),
           { nodes: nodesDS, edges: edgesDS }, options);
-      } else {
-        nodesDS.clear(); edgesDS.clear();
-        nodesDS.add(nodes); edgesDS.add(edges);
+        network.once("stabilizationIterationsDone", freeze);
+        return;
       }
+      const haveNodes = new Set(nodesDS.getIds());
+      const newNodes = graph.nodes
+        .filter(function (n) { return !haveNodes.has(n.id); })
+        .map(toVisNode);
+      const haveEdges = new Set(edgesDS.getIds());
+      const newEdges = graph.edges
+        .map(toVisEdge)
+        .filter(function (e) { return !haveEdges.has(e.id); });
+      if (newNodes.length === 0 && newEdges.length === 0) return;
+      if (newNodes.length) nodesDS.add(newNodes);
+      if (newEdges.length) edgesDS.add(newEdges);
+      // briefly re-enable physics to settle the new nodes, then freeze again
+      network.setOptions({ physics: { enabled: true } });
+      network.once("stabilizationIterationsDone", freeze);
+      network.stabilize();
     }
 
     if (token()) { showApp(); }
