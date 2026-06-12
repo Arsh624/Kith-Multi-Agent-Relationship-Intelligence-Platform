@@ -44,7 +44,7 @@ def test_build_graph_excludes_other_users(db_session):
 
     graph = build_graph(db_session, other.id)
 
-    assert graph.nodes == []
+    assert [n for n in graph.nodes if n.type != "you"] == []
     assert graph.edges == []
 
 
@@ -57,4 +57,7 @@ def test_build_graph_person_without_company_has_no_edge(db_session):
     graph = build_graph(db_session, user.id)
 
     assert any(n.label == "Solo" and n.type == "person" for n in graph.nodes)
-    assert graph.edges == []
+    assert not any(e.label == "WORKS_AT" for e in graph.edges)
+    assert any(
+        e.source == "you" and e.label == "KNOWS" for e in graph.edges
+    )

@@ -6,6 +6,8 @@ from app.models.connection import Connection
 from app.models.person import Person
 from app.schemas.graph import GraphEdge, GraphNode, GraphResponse
 
+YOU_NODE_ID = "you"
+
 
 def build_graph(db: Session, user_id: str) -> GraphResponse:
     companies = db.scalars(
@@ -16,7 +18,11 @@ def build_graph(db: Session, user_id: str) -> GraphResponse:
         select(Connection).where(Connection.user_id == user_id)
     ).all()
 
-    nodes: list[GraphNode] = []
+    introduced = {c.to_person_id for c in connections}
+
+    nodes: list[GraphNode] = [
+        GraphNode(id=YOU_NODE_ID, label="You", type="you")
+    ]
     edges: list[GraphEdge] = []
 
     for company in companies:
@@ -34,6 +40,14 @@ def build_graph(db: Session, user_id: str) -> GraphResponse:
                     source=f"person:{person.id}",
                     target=f"company:{person.company_id}",
                     label="WORKS_AT",
+                )
+            )
+        if person.id not in introduced:
+            edges.append(
+                GraphEdge(
+                    source=YOU_NODE_ID,
+                    target=f"person:{person.id}",
+                    label="KNOWS",
                 )
             )
 

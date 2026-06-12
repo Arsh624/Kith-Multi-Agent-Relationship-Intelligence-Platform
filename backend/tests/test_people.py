@@ -33,7 +33,10 @@ def test_add_person_without_company(client):
 
     graph = client.get("/graph", headers=headers).json()
     assert any(n["label"] == "Solo" for n in graph["nodes"])
-    assert graph["edges"] == []
+    assert not any(e["label"] == "WORKS_AT" for e in graph["edges"])
+    assert any(
+        e["source"] == "you" and e["label"] == "KNOWS" for e in graph["edges"]
+    )
 
 
 def test_add_person_requires_auth(client):

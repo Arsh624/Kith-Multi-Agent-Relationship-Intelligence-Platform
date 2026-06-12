@@ -72,4 +72,6 @@ def test_graph_empty_for_new_user(client):
         "/graph", headers={"Authorization": f"Bearer {token}"}
     )
     assert response.status_code == 200
-    assert response.json() == {"nodes": [], "edges": []}
+    body = response.json()
+    assert body["nodes"] == [{"id": "you", "label": "You", "type": "you"}]
+    assert body["edges"] == []
