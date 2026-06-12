@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.company import Company
+from app.models.connection import Connection
 from app.models.person import Person
 from app.schemas.graph import GraphEdge, GraphNode, GraphResponse
 
@@ -11,6 +12,9 @@ def build_graph(db: Session, user_id: str) -> GraphResponse:
         select(Company).where(Company.user_id == user_id)
     ).all()
     people = db.scalars(select(Person).where(Person.user_id == user_id)).all()
+    connections = db.scalars(
+        select(Connection).where(Connection.user_id == user_id)
+    ).all()
 
     nodes: list[GraphNode] = []
     edges: list[GraphEdge] = []
@@ -32,5 +36,14 @@ def build_graph(db: Session, user_id: str) -> GraphResponse:
                     label="WORKS_AT",
                 )
             )
+
+    for connection in connections:
+        edges.append(
+            GraphEdge(
+                source=f"person:{connection.from_person_id}",
+                target=f"person:{connection.to_person_id}",
+                label=connection.relation_type.upper(),
+            )
+        )
 
     return GraphResponse(nodes=nodes, edges=edges)

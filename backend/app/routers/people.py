@@ -20,7 +20,9 @@ def create_person(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    person = add_person(db, current_user.id, payload.name, payload.company)
+    person = add_person(
+        db, current_user.id, payload.name, payload.company, payload.known_through
+    )
     company_name = None
     if person.company_id is not None:
         company = db.get(Company, person.company_id)

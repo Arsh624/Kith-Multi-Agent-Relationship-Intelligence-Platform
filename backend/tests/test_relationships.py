@@ -60,3 +60,27 @@ def test_ingest_dedupes_people_across_pastes(db_session):
         select(Person).where(Person.name == "Dipunj")
     ).all()
     assert len(dipunjs) == 1
+
+
+def test_add_person_known_through_creates_connection(client):
+    register = client.post(
+        "/auth/register", json={"email": "k@example.com", "password": "hunter2"}
+    )
+    headers = {"Authorization": f"Bearer {register.json()['access_token']}"}
+
+    client.post("/people", headers=headers, json={"name": "Dipunj", "company": "Cloudflare"})
+    response = client.post(
+        "/people",
+        headers=headers,
+        json={"name": "Rahul", "company": "Qualcomm", "known_through": "Dipunj"},
+    )
+    assert response.status_code == 201
+
+    graph = client.get("/graph", headers=headers).json()
+    labels_by_id = {n["id"]: n["label"] for n in graph["nodes"]}
+    knows_edges = [
+        (labels_by_id.get(e["source"]), labels_by_id.get(e["target"]))
+        for e in graph["edges"]
+        if e["label"] == "KNOWS"
+    ]
+    assert ("Dipunj", "Rahul") in knows_edges
