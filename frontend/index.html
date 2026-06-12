@@ -171,15 +171,16 @@
         enabled: true,
         solver: "forceAtlas2Based",
         forceAtlas2Based: {
-          gravitationalConstant: -45,
-          centralGravity: 0.008,
-          springLength: 140,
-          springConstant: 0.045,
-          damping: 0.7,
+          gravitationalConstant: -60,
+          centralGravity: 0.002,
+          springLength: 150,
+          springConstant: 0.02,
+          damping: 0.55,
           avoidOverlap: 1,
         },
-        stabilization: { enabled: true, iterations: 220, fit: true },
-        minVelocity: 0.75,
+        stabilization: false,
+        minVelocity: 0.05,
+        timestep: 0.3,
       },
       interaction: { hover: true, dragNodes: true, dragView: true, zoomView: true },
       nodes: {
@@ -210,10 +211,6 @@
       };
     }
 
-    function freeze() {
-      if (network) network.setOptions({ physics: { enabled: false } });
-    }
-
     function edgeId(e) { return e.source + "->" + e.target + ":" + e.label; }
     function toVisEdge(e) {
       return { id: edgeId(e), from: e.source, to: e.target, label: e.label };
@@ -226,9 +223,9 @@
         edgesDS = new vis.DataSet(graph.edges.map(toVisEdge));
         network = new vis.Network(document.getElementById("cy"),
           { nodes: nodesDS, edges: edgesDS }, options);
-        network.once("stabilizationIterationsDone", freeze);
         return;
       }
+      // add only what is new so existing nodes keep drifting from where they are
       const haveNodes = new Set(nodesDS.getIds());
       const newNodes = graph.nodes
         .filter(function (n) { return !haveNodes.has(n.id); })
@@ -237,13 +234,8 @@
       const newEdges = graph.edges
         .map(toVisEdge)
         .filter(function (e) { return !haveEdges.has(e.id); });
-      if (newNodes.length === 0 && newEdges.length === 0) return;
       if (newNodes.length) nodesDS.add(newNodes);
       if (newEdges.length) edgesDS.add(newEdges);
-      // briefly re-enable physics to settle the new nodes, then freeze again
-      network.setOptions({ physics: { enabled: true } });
-      network.once("stabilizationIterationsDone", freeze);
-      network.stabilize();
     }
 
     if (token()) { showApp(); }
