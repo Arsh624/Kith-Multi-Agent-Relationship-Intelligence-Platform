@@ -1,7 +1,9 @@
 from typing import Optional
 
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from app.models.connection import Connection
 from app.models.person import Person
 from app.services.companies import get_or_create_company
 from app.services.connections import add_connection
@@ -32,3 +34,25 @@ def add_person(
     db.commit()
     db.refresh(person)
     return person
+
+
+def delete_person(db: Session, user_id: str, person_id: str) -> bool:
+    person = db.scalar(
+        select(Person).where(Person.id == person_id, Person.user_id == user_id)
+    )
+    if person is None:
+        return False
+    connections = db.scalars(
+        select(Connection).where(
+            Connection.user_id == user_id,
+            or_(
+                Connection.from_person_id == person_id,
+                Connection.to_person_id == person_id,
+            ),
+        )
+    ).all()
+    for connection in connections:
+        db.delete(connection)
+    db.delete(person)
+    db.commit()
+    return True

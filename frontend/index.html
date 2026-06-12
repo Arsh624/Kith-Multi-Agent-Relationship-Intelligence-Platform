@@ -60,6 +60,7 @@
       <input id="pcompany" placeholder="company (optional)" onkeydown="if(event.key==='Enter')addPerson()" />
       <input id="pknown" placeholder="known through (optional)" onkeydown="if(event.key==='Enter')addPerson()" />
       <button onclick="addPerson()">Add</button>
+      <button class="secondary" onclick="deleteSelected()">Delete selected</button>
       <button class="ghost" onclick="togglePaste()">Import from a message</button>
       <span id="addStatus" class="muted"></span>
       <input id="introCompany" placeholder="who can get me into... (company)" onkeydown="if(event.key==='Enter')findPaths()" />
@@ -105,7 +106,9 @@
         } catch (err) {}
         throw new Error(message);
       }
-      return res.json();
+      if (res.status === 204) return null;
+      const body = await res.text();
+      return body ? JSON.parse(body) : null;
     }
 
     async function register() { await auth("/auth/register"); }
@@ -269,22 +272,46 @@
       };
     }
 
+    let selectedNode = null;
     function onNodeClick(params) {
-      if (!params.nodes || !params.nodes.length) return;
+      if (!params.nodes || !params.nodes.length) { selectedNode = null; return; }
       const id = params.nodes[0];
       const node = nodesDS.get(id);
       if (!node) return;
+      selectedNode = { id: id, label: node.label };
+      const status = document.getElementById("addStatus");
       if (id === "you") {
         document.getElementById("pknown").value = "";
-        document.getElementById("addStatus").textContent = "Adding a contact you know directly. Enter a name.";
+        status.textContent = "Adding a contact you know directly. Enter a name.";
       } else if (id.indexOf("person:") === 0) {
         document.getElementById("pknown").value = node.label;
-        document.getElementById("addStatus").textContent =
-          "Adding someone " + node.label + " knows. Enter a name.";
-      } else {
-        return;
+        status.textContent =
+          "Adding someone " + node.label + " knows. Or use Delete selected to remove " + node.label + ".";
+      } else if (id.indexOf("company:") === 0) {
+        status.textContent =
+          "Selected " + node.label + ". Use Delete selected to remove it.";
       }
       document.getElementById("pname").focus();
+    }
+
+    async function deleteSelected() {
+      const status = document.getElementById("addStatus");
+      if (!selectedNode) { status.textContent = "Click a node first, then Delete selected."; return; }
+      const id = selectedNode.id;
+      if (id === "you") { status.textContent = "The You node cannot be deleted."; return; }
+      if (!confirm("Delete " + selectedNode.label + "?")) return;
+      let path = null;
+      if (id.indexOf("person:") === 0) path = "/people/" + id.split(":")[1];
+      else if (id.indexOf("company:") === 0) path = "/companies/" + id.split(":")[1];
+      else return;
+      status.textContent = "Deleting...";
+      try {
+        await api(path, { method: "DELETE" });
+        selectedNode = null;
+        status.textContent = "Deleted.";
+        await loadGraph();
+        syncGraph();
+      } catch (e) { status.textContent = e.message || "Delete failed."; }
     }
 
     async function loadGraph() {
@@ -298,14 +325,20 @@
         return;
       }
       // add only what is new so existing nodes keep drifting from where they are
+      const serverNodeIds = new Set(graph.nodes.map(function (n) { return n.id; }));
       const haveNodes = new Set(nodesDS.getIds());
       const newNodes = graph.nodes
         .filter(function (n) { return !haveNodes.has(n.id); })
         .map(toVisNode);
+      const serverEdges = graph.edges.map(toVisEdge);
+      const serverEdgeIds = new Set(serverEdges.map(function (e) { return e.id; }));
       const haveEdges = new Set(edgesDS.getIds());
-      const newEdges = graph.edges
-        .map(toVisEdge)
-        .filter(function (e) { return !haveEdges.has(e.id); });
+      const newEdges = serverEdges.filter(function (e) { return !haveEdges.has(e.id); });
+      // remove nodes and edges that no longer exist on the server (deletions)
+      const staleNodes = nodesDS.getIds().filter(function (id) { return !serverNodeIds.has(id); });
+      const staleEdges = edgesDS.getIds().filter(function (id) { return !serverEdgeIds.has(id); });
+      if (staleEdges.length) edgesDS.remove(staleEdges);
+      if (staleNodes.length) nodesDS.remove(staleNodes);
       if (newNodes.length) nodesDS.add(newNodes);
       if (newEdges.length) edgesDS.add(newEdges);
     }

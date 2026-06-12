@@ -7,7 +7,7 @@ from app.models.company import Company
 from app.models.user import User
 from app.schemas.paste import PersonOut
 from app.schemas.people import PersonCreate
-from app.services.people import KnownThroughNotFound, add_person
+from app.services.people import KnownThroughNotFound, add_person, delete_person
 
 router = APIRouter(tags=["people"])
 
@@ -40,3 +40,16 @@ def create_person(
         company=company_name,
         note=person.note,
     )
+
+
+@router.delete("/people/{person_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_person(
+    person_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not delete_person(db, current_user.id, person_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
+        )
+    return None
