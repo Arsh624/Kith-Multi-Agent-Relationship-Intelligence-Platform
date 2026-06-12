@@ -6,6 +6,10 @@ os.environ["JWT_ALGORITHM"] = "HS256"
 os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"] = "60"
 os.environ["GEMINI_API_KEY"] = "test-key"
 os.environ["GEMINI_MODEL"] = "gemini-2.5-flash"
+os.environ["NEO4J_URI"] = "bolt://localhost:7687"
+os.environ["NEO4J_USERNAME"] = "neo4j"
+os.environ["NEO4J_PASSWORD"] = "test"
+os.environ["NEO4J_DATABASE"] = "neo4j"
 
 import pytest
 from fastapi.testclient import TestClient
