@@ -31,3 +31,24 @@ def client():
     engine.dispose()
     if os.path.exists(db_path):
         os.remove(db_path)
+
+
+@pytest.fixture()
+def db_session():
+    db_path = "test_kith.db"
+    if os.path.exists(db_path):
+        os.remove(db_path)
+
+    from app.database import Base, SessionLocal, engine
+    import app.models  # noqa: F401  registers all tables
+
+    Base.metadata.create_all(bind=engine)
+    session = SessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+        Base.metadata.drop_all(bind=engine)
+        engine.dispose()
+        if os.path.exists(db_path):
+            os.remove(db_path)
