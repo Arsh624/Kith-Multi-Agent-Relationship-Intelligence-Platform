@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.database import Base, engine
 import app.models  # noqa: F401  registers all model tables
-from app.routers import auth, companies, graph, health, intro, paste, people
+from app.routers import auth, companies, graph, health, intro, paste, people, tasks
 
 Base.metadata.create_all(bind=engine)
 
@@ -17,6 +17,7 @@ app.include_router(graph.router)
 app.include_router(people.router)
 app.include_router(intro.router)
 app.include_router(companies.router)
+app.include_router(tasks.router)
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"
 app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")

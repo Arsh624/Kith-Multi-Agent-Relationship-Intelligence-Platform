@@ -61,3 +61,50 @@ def test_set_task_done_scoped_to_user(db_session):
     other = _make_user(db_session, "other@example.com")
     task = create_task(db_session, owner.id, "x", None, "medium")
     assert set_task_done(db_session, other.id, task.id, True) is None
+
+
+def _register(client, email="te@example.com"):
+    response = client.post(
+        "/auth/register", json={"email": email, "password": "hunter2"}
+    )
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+def test_task_endpoints_crud(client):
+    headers = _register(client)
+
+    created = client.post(
+        "/tasks",
+        headers=headers,
+        json={"title": "Email recruiter", "priority": "high"},
+    )
+    assert created.status_code == 201
+    task_id = created.json()["id"]
+    assert created.json()["done"] is False
+
+    listed = client.get("/tasks", headers=headers).json()
+    assert any(t["id"] == task_id for t in listed)
+
+    patched = client.patch(
+        f"/tasks/{task_id}", headers=headers, json={"done": True}
+    )
+    assert patched.status_code == 200
+    assert patched.json()["done"] is True
+
+    removed = client.delete(f"/tasks/{task_id}", headers=headers)
+    assert removed.status_code == 204
+    assert client.delete(f"/tasks/{task_id}", headers=headers).status_code == 404
+
+
+def test_task_create_without_deadline(client):
+    headers = _register(client)
+    response = client.post("/tasks", headers=headers, json={"title": "Just do it"})
+    assert response.status_code == 201
+    body = response.json()
+    assert body["deadline"] is None
+    assert body["priority"] == "medium"
+
+
+def test_tasks_require_auth(client):
+    assert client.get("/tasks").status_code in (401, 403)
+    assert client.post("/tasks", json={"title": "x"}).status_code in (401, 403)
