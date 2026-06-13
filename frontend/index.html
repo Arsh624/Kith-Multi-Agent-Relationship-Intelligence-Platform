@@ -112,8 +112,15 @@
 
     #paste { display: none; padding: 14px 24px; border-bottom: 1px solid var(--border); }
     #paste textarea { width: 100%; margin: 6px 0; }
+    #cyWrap { position: relative; }
     #cy { height: calc(100vh - 150px); background: #000;
       border: 1px solid var(--border); border-radius: 2px; }
+    .fsbtn { position: absolute; top: 12px; right: 12px; z-index: 30; padding: 7px 12px;
+      font-size: 12px; cursor: pointer; background: var(--surface); color: var(--text);
+      border: 1px solid var(--border-strong); letter-spacing: .04em; opacity: .85; }
+    .fsbtn:hover { opacity: 1; }
+    #cyWrap:fullscreen { background: #000; }
+    #cyWrap:fullscreen #cy { height: 100vh; border: none; }
 
     .muted { color: var(--dim); font-size: 13px; }
     .error { color: var(--error); font-size: 13px; }
@@ -327,7 +334,10 @@
       <span id="pasteStatus" class="muted"></span>
     </div>
 
-    <div id="cy"></div>
+    <div id="cyWrap">
+      <button id="fsBtn" class="fsbtn" onclick="toggleGraphFullscreen()" title="Full screen">Full screen</button>
+      <div id="cy"></div>
+    </div>
     <div id="personCard" style="display:none">
       <div class="cardhead">
         <div class="cardname-wrap">
@@ -924,7 +934,23 @@
       if (staleNodes.length) nodesDS.remove(staleNodes);
       nodesDS.update(graph.nodes.map(toVisNode));
       edgesDS.update(serverEdges);
+      network.redraw();
     }
+
+    function toggleGraphFullscreen() {
+      const el = document.getElementById("cyWrap");
+      if (!document.fullscreenElement) {
+        (el.requestFullscreen ? el.requestFullscreen() : Promise.reject()).catch(function () {});
+      } else {
+        document.exitFullscreen();
+      }
+    }
+    document.addEventListener("fullscreenchange", function () {
+      const on = !!document.fullscreenElement;
+      const btn = document.getElementById("fsBtn");
+      if (btn) btn.textContent = on ? "Exit full screen" : "Full screen";
+      if (network) { network.redraw(); network.fit(); }
+    });
 
     applyTheme(localStorage.getItem("kith_theme") || "dark");
     if (token()) { showApp(); } else { showLanding(); }
