@@ -191,7 +191,6 @@ backend/
   tests/               18 hermetic test modules
 frontend/
   index.html           single-page UI
-docs/superpowers/      specs and implementation plans for each phase
 ```
 
 ## Disclaimer
