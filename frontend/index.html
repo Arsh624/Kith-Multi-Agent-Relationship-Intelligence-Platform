@@ -30,11 +30,13 @@
       background: var(--bg); font-size: 15px; line-height: 1.45; min-height: 100vh;
       -webkit-font-smoothing: antialiased; transition: background .2s, color .2s; }
     h1, h2, h3, .display { font-family: 'Space Grotesk', sans-serif; letter-spacing: -.02em; font-weight: 600; }
-    header { display: flex; justify-content: space-between; align-items: center; gap: 12px;
-      padding: 15px 24px; border-bottom: 1px solid var(--border); }
-    .brand { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 21px; letter-spacing: -.03em; }
+    header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+      padding: 22px 30px; background: transparent; border: none;
+      position: absolute; top: 0; left: 0; right: 0; z-index: 30; }
+    .brand { font-family: 'Space Grotesk', sans-serif; font-weight: 700;
+      font-size: clamp(30px, 4vw, 44px); letter-spacing: -.04em; line-height: 1; }
     .headright { display: flex; align-items: center; gap: 10px; }
-    #app { display: none; }
+    #app { display: none; padding-top: 84px; }
 
     input, textarea, select { font: inherit; color: var(--text); background: var(--surface);
       border: 1px solid var(--border-strong); border-radius: 10px; padding: 9px 12px; }
@@ -105,8 +107,8 @@
 
     #paste { display: none; padding: 14px 24px; border-bottom: 1px solid var(--border); }
     #paste textarea { width: 100%; margin: 6px 0; }
-    #cy { height: calc(100vh - 118px);
-      background: radial-gradient(circle at 50% 30%, var(--cy-1) 0%, var(--cy-2) 80%); }
+    #cy { height: calc(100vh - 150px); background: #000;
+      border: 1px solid var(--border); border-radius: 2px; }
 
     .muted { color: var(--dim); font-size: 13px; }
     .error { color: var(--error); font-size: 13px; }
@@ -127,11 +129,11 @@
     details.tools > summary, .toolsmenu, #personCard, .modal { border-radius: 0; }
 
     /* landing */
-    #landing { position: relative; min-height: calc(100vh - 61px); overflow: hidden; }
+    #landing { position: relative; min-height: 100vh; overflow: hidden; }
     #grainient { position: absolute; inset: 0; z-index: 0; }
     #grainient canvas { width: 100%; height: 100%; display: block; }
     .landing-inner { position: relative; z-index: 1; max-width: 1040px; margin: 0 auto;
-      padding: 9vh 28px 60px; }
+      padding: 150px 28px 60px; }
     .eyebrow { font-family: 'Space Grotesk', sans-serif; text-transform: uppercase;
       letter-spacing: .22em; font-size: 12px; color: var(--dim); margin: 0 0 18px; }
     .hero-title { font-size: clamp(40px, 7vw, 86px); line-height: .98; margin: 0;
@@ -180,8 +182,7 @@
   <header>
     <span class="brand">Kith</span>
     <div class="headright">
-      <button id="themeToggle" class="themetoggle" title="Toggle light / dark" onclick="toggleTheme()">&#9790;</button>
-      <button id="headerSignin" class="secondary" onclick="openAuth('login')">Sign in</button>
+      <button id="themeToggle" class="themetoggle" title="Toggle light / dark" onclick="toggleTheme()" style="display:none">&#9790;</button>
       <button id="logout" class="secondary" style="display:none" onclick="logout()">Log out</button>
     </div>
   </header>
@@ -334,8 +335,9 @@
 
     function isLight() { return document.documentElement.getAttribute("data-theme") === "light"; }
     function graphFont() {
-      return { color: isLight() ? "#2a2727" : "#ece6e7", size: 17, face: "Hanken Grotesk, system-ui",
-               multi: true, ital: { color: "#e2546f", size: 13, face: "Hanken Grotesk, system-ui" } };
+      return { color: "#f3ece8", size: 18, face: "Hanken Grotesk, system-ui",
+               multi: "md", bold: { color: "#ffffff", size: 18, face: "Hanken Grotesk, system-ui" },
+               ital: { color: "#f7a7b4", size: 13, face: "Hanken Grotesk, system-ui" } };
     }
     function applyTheme(theme) {
       document.documentElement.setAttribute("data-theme", theme);
@@ -344,7 +346,7 @@
       if (btn) btn.innerHTML = theme === "light" ? "&#9788;" : "&#9790;";
       if (typeof network !== "undefined" && network) {
         network.setOptions({ nodes: { font: graphFont() },
-          edges: { font: { color: isLight() ? "#6b6363" : "#b3aaaa" } } });
+          edges: { font: { color: "#b3a59d" } } });
       }
       buildLogoLoop();
     }
@@ -495,7 +497,8 @@
       document.getElementById("app").style.display = "none";
       document.getElementById("landing").style.display = "block";
       document.getElementById("logout").style.display = "none";
-      document.getElementById("headerSignin").style.display = "inline-block";
+      document.getElementById("themeToggle").style.display = "none";
+      document.documentElement.setAttribute("data-theme", "dark");
       closeAuth();
       if (window.__grainient) window.__grainient.start();
     }
@@ -509,7 +512,8 @@
       document.getElementById("landing").style.display = "none";
       document.getElementById("app").style.display = "block";
       document.getElementById("logout").style.display = "inline-block";
-      document.getElementById("headerSignin").style.display = "none";
+      document.getElementById("themeToggle").style.display = "inline-block";
+      applyTheme(localStorage.getItem("kith_theme") || "dark");
       closeAuth();
       if (window.__grainient) window.__grainient.stop();
       loadGraph();
@@ -689,7 +693,7 @@
       if (n.type === "you") {
         return {
           id: n.id,
-          label: "**You**",
+          label: "*You*",
           shape: "dot",
           size: 30,
           color: { background: "#e2546f", border: "#f7a7b4",
@@ -699,7 +703,7 @@
       const isCompany = n.type === "company";
       let label = n.label;
       if (!isCompany && n.sublabel) {
-        label = "**" + n.label + "**\n_(" + n.sublabel + ")_";
+        label = "*" + n.label + "*\n_(" + n.sublabel + ")_";
       }
       return {
         id: n.id,
