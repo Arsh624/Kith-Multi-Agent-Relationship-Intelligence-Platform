@@ -27,7 +27,12 @@ def build_graph(db: Session, user_id: str) -> GraphResponse:
 
     for company in companies:
         nodes.append(
-            GraphNode(id=f"company:{company.id}", label=company.name, type="company")
+            GraphNode(
+                id=f"company:{company.id}",
+                label=company.name,
+                type="company",
+                color=company.color,
+            )
         )
 
     for person in people:
@@ -37,6 +42,8 @@ def build_graph(db: Session, user_id: str) -> GraphResponse:
                 label=person.name,
                 type="person",
                 sublabel=person.title,
+                color=person.color,
+                favorite=bool(person.favorite),
             )
         )
         if person.company_id is not None:

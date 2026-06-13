@@ -18,6 +18,8 @@ class PersonDetail(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     linkedin: Optional[str] = None
+    color: Optional[str] = None
+    favorite: bool = False
 
 
 class PersonPatch(BaseModel):
@@ -25,3 +27,5 @@ class PersonPatch(BaseModel):
     email: Optional[str] = None
     phone: Optional[str] = None
     linkedin: Optional[str] = None
+    color: Optional[str] = None
+    favorite: Optional[bool] = None

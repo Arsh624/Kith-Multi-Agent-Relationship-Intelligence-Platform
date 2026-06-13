@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.database import Base, engine
+from app.migrate import ensure_schema
 import app.models  # noqa: F401  registers all model tables
 from app.routers import (
     auth,
@@ -22,6 +23,7 @@ from app.routers import (
 )
 
 Base.metadata.create_all(bind=engine)
+ensure_schema(engine)
 
 
 async def _keep_warm(url: str) -> None:

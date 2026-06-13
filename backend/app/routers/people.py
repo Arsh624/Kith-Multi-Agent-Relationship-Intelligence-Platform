@@ -73,6 +73,8 @@ def _build_detail(db: Session, user_id: str, person: Person) -> PersonDetail:
         email=contact.email if contact is not None else None,
         phone=contact.phone if contact is not None else None,
         linkedin=contact.linkedin if contact is not None else None,
+        color=person.color,
+        favorite=bool(person.favorite),
     )
 
 
@@ -112,6 +114,10 @@ def update_person_detail(
         )
     if payload.title is not None:
         person.title = payload.title
+    if payload.color is not None:
+        person.color = payload.color or None
+    if payload.favorite is not None:
+        person.favorite = payload.favorite
     upsert_contact(
         db,
         current_user.id,

@@ -8,6 +8,8 @@ class GraphNode(BaseModel):
     label: str
     type: str
     sublabel: Optional[str] = None
+    color: Optional[str] = None
+    favorite: bool = False
 
 
 class GraphEdge(BaseModel):
