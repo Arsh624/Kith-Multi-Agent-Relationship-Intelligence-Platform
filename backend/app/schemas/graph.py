@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -5,6 +7,7 @@ class GraphNode(BaseModel):
     id: str
     label: str
     type: str
+    sublabel: Optional[str] = None
 
 
 class GraphEdge(BaseModel):

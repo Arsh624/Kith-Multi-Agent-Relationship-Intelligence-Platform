@@ -73,5 +73,7 @@ def test_graph_empty_for_new_user(client):
     )
     assert response.status_code == 200
     body = response.json()
-    assert body["nodes"] == [{"id": "you", "label": "You", "type": "you"}]
+    assert len(body["nodes"]) == 1
+    assert body["nodes"][0]["id"] == "you"
+    assert body["nodes"][0]["type"] == "you"
     assert body["edges"] == []

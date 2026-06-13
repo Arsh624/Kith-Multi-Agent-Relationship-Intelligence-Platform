@@ -4,63 +4,139 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kith</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Mulish:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
   <style>
-    :root { --bg: #0b1020; --panel: #0f172a; --line: #1e293b; --text: #e2e8f0; --muted: #94a3b8; }
+    :root {
+      --paper: #faf8f8; --paper-2: #f3efef; --paper-3: #ece6e5;
+      --ink: #312d2c; --ink-soft: #69615f; --ink-faint: #9a8c88;
+      --line: #cbc1be; --line-soft: #d9d0ce;
+      --accent: #e16347; --accent-press: #c85339; --accent-soft: #ffe0d8;
+      --person: #5aa469; --company: #c87f43;
+      --shadow-1: 0 1px 2px rgba(70,34,26,.10), 0 4px 12px rgba(70,34,26,.10);
+      --shadow-2: 0 2px 6px rgba(70,34,26,.14), 0 14px 34px rgba(70,34,26,.16);
+      --inset: inset 0 1px 2px rgba(70,34,26,.14);
+      --raise: inset 0 1px 0 rgba(255,255,255,.6);
+    }
     * { box-sizing: border-box; }
-    body { font-family: system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--text); }
-    header { padding: 12px 20px; background: var(--panel); border-bottom: 1px solid var(--line);
-             display: flex; justify-content: space-between; align-items: center; }
-    header h1 { font-size: 18px; margin: 0; letter-spacing: 0.5px; }
-    #auth { max-width: 360px; margin: 80px auto; padding: 24px; background: var(--panel);
-            border: 1px solid var(--line); border-radius: 12px; }
+    body {
+      font-family: 'Mulish', system-ui, sans-serif; margin: 0; color: var(--ink);
+      font-size: 16px; line-height: 1.4;
+      background:
+        radial-gradient(1200px 500px at 80% -10%, #fbf3ee 0%, transparent 60%),
+        linear-gradient(180deg, #f4ede9 0%, #ebe1dc 100%);
+      background-attachment: fixed; min-height: 100vh;
+    }
+    h1, h2, h3, .serif { font-family: 'Fraunces', Georgia, serif; }
+    header {
+      padding: 14px 22px; display: flex; justify-content: space-between; align-items: center;
+      background: linear-gradient(180deg, #fdfaf8, #f1e9e4);
+      border-bottom: 1px solid var(--line); box-shadow: 0 2px 8px rgba(70,34,26,.08);
+    }
+    header h1 { font-size: 24px; margin: 0; font-weight: 700; letter-spacing: .3px; color: var(--ink); }
     #app { display: none; }
-    input, textarea, button { font: inherit; }
-    input, textarea { width: 100%; padding: 9px 11px; margin: 5px 0; background: #0b1224;
-                      color: var(--text); border: 1px solid var(--line); border-radius: 8px; }
-    input::placeholder, textarea::placeholder { color: #5b6b85; }
-    button { background: #6366f1; color: #fff; border: none; border-radius: 8px;
-             cursor: pointer; padding: 9px 14px; font-weight: 600; }
-    button.secondary { background: #334155; }
-    button.ghost { background: transparent; color: var(--muted); padding: 4px 0; font-weight: 500; }
-    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-               padding: 14px 20px; border-bottom: 1px solid var(--line); background: rgba(15,23,42,0.6); }
-    .toolbar input { width: auto; flex: 1; min-width: 140px; margin: 0; }
-    #paste { display: none; padding: 14px 20px; border-bottom: 1px solid var(--line);
-             background: rgba(15,23,42,0.4); }
-    #cy { height: calc(100vh - 130px); background:
-          radial-gradient(circle at 50% 40%, #131a30 0%, var(--bg) 70%); }
-    .muted { color: var(--muted); font-size: 13px; }
-    .error { color: #f87171; font-size: 13px; }
-    h2 { font-weight: 600; }
-    .legend { display: flex; gap: 16px; align-items: center; margin-left: auto; color: var(--muted); font-size: 12px; }
-    .dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
-    .tabs { display: flex; gap: 8px; padding: 10px 20px 0; }
-    .tab { background: #1e293b; color: var(--muted); border: none; border-radius: 8px 8px 0 0;
-           padding: 8px 16px; cursor: pointer; font-weight: 600; }
-    .tab.active { background: var(--panel); color: var(--text); }
-    #tasksView { padding: 20px; max-width: 760px; }
-    .taskform { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 18px; }
+
+    input, textarea, select { font: inherit; color: var(--ink); background: #fffdfc;
+      border: 1px solid var(--line); border-radius: 9px; padding: 9px 12px; box-shadow: var(--inset); }
+    input::placeholder, textarea::placeholder { color: var(--ink-faint); }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent);
+      box-shadow: var(--inset), 0 0 0 3px var(--accent-soft); }
+
+    button { font: inherit; font-weight: 700; cursor: pointer; color: #fff;
+      border: 1px solid var(--accent-press); border-radius: 9px; padding: 9px 15px;
+      background: linear-gradient(180deg, #ec7a60, #e16347);
+      box-shadow: var(--raise), 0 2px 4px rgba(70,34,26,.18); }
+    button:hover { filter: brightness(1.03); }
+    button:active { transform: translateY(1px); box-shadow: inset 0 2px 4px rgba(70,34,26,.25); }
+    button.secondary { background: linear-gradient(180deg, #fdfaf8, #ece3de); color: var(--ink);
+      border-color: var(--line); box-shadow: var(--raise), 0 2px 4px rgba(70,34,26,.12); }
+    button.ghost { background: transparent; border: none; box-shadow: none; color: var(--ink-soft);
+      font-weight: 600; padding: 8px 6px; }
+    .iconbtn { padding: 8px 11px; font-size: 15px; line-height: 1; }
+    .iconbtn.danger { background: linear-gradient(180deg, #ee6b66, #e1524f); border-color: #974843; }
+
+    #auth { max-width: 380px; margin: 9vh auto; padding: 28px;
+      background: linear-gradient(180deg, #fffdfc, #f6efec); border: 1px solid var(--line);
+      border-radius: 16px; box-shadow: var(--shadow-2); }
+    #auth h2 { margin: 0 0 4px; font-size: 26px; }
+    #auth input { width: 100%; margin: 6px 0; }
+
+    .tabs { display: flex; gap: 6px; padding: 12px 22px 0; }
+    .tab { font-family: 'Fraunces', serif; font-weight: 600; font-size: 15px; color: var(--ink-soft);
+      background: linear-gradient(180deg, #efe6e1, #e4d9d3); border: 1px solid var(--line);
+      border-bottom: none; border-radius: 11px 11px 0 0; padding: 9px 20px; cursor: pointer;
+      box-shadow: var(--raise); position: relative; top: 1px; }
+    .tab.active { background: linear-gradient(180deg, #fffdfc, #faf5f2); color: var(--ink); }
+
+    .panel { background: linear-gradient(180deg, #fdfbfa, #f5eeea); border: 1px solid var(--line);
+      box-shadow: var(--shadow-1); }
+
+    #tasksView { padding: 26px 22px; max-width: 720px; }
+    #greeting { font-size: 28px; margin: 6px 0 18px; }
+    .taskform { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 20px; align-items: center; }
     .taskform input, .taskform select { width: auto; }
+    .taskform #taskTitle { flex: 1; min-width: 200px; }
     .tasklist { list-style: none; padding: 0; margin: 0; }
-    .taskrow { display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-               border: 1px solid var(--line); border-radius: 8px; margin-bottom: 8px;
-               background: var(--panel); }
-    .taskrow.done .tasktitle { text-decoration: line-through; color: var(--muted); }
-    .tasktitle { flex: 1; }
-    .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; color: #fff; }
-    .badge.high { background: #dc2626; }
-    .badge.medium { background: #d97706; }
-    .badge.low { background: #2563eb; }
-    .deadline { color: var(--muted); font-size: 12px; }
-    .taskdel { background: transparent; color: var(--muted); padding: 2px 6px; }
-    #personCard { position: fixed; top: 150px; right: 24px; width: 280px;
-                  background: var(--panel); border: 1px solid var(--line);
-                  border-radius: 12px; padding: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.45); }
-    #personCard input { width: 100%; }
-    .cardhead { display: flex; justify-content: space-between; align-items: center; }
-    .cardlabel { font-size: 11px; color: var(--muted); display: block; margin-top: 8px; }
-    .cardactions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .taskrow { display: flex; align-items: center; gap: 12px; padding: 12px 14px;
+      border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 10px;
+      margin-bottom: 9px; background: linear-gradient(180deg, #fffdfc, #f7f1ee);
+      box-shadow: var(--shadow-1); }
+    .taskrow.high { border-left-color: #e1524f; }
+    .taskrow.medium { border-left-color: #dbb155; }
+    .taskrow.low { border-left-color: #5baee5; }
+    .taskrow.done { opacity: .65; }
+    .taskrow.done .tasktitle { text-decoration: line-through; color: var(--ink-faint); }
+    .taskrow input[type=checkbox] { width: 18px; height: 18px; box-shadow: none; accent-color: var(--accent); }
+    .tasktitle { flex: 1; font-weight: 600; }
+    .badge { font-size: 11px; padding: 2px 9px; border-radius: 999px; color: #fff; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .04em; box-shadow: var(--raise); }
+    .badge.high { background: #d23b38; } .badge.medium { background: #c98b2c; } .badge.low { background: #4596cf; }
+    .deadline { color: var(--ink-soft); font-size: 12px; }
+    .taskdel { background: transparent; border: none; box-shadow: none; color: var(--ink-faint);
+      padding: 2px 6px; font-weight: 600; }
+    .taskdel:hover { color: var(--accent-press); }
+
+    .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 14px 22px;
+      background: linear-gradient(180deg, #f3ebe7, #e9ded8);
+      border-bottom: 1px solid var(--line); box-shadow: var(--inset); }
+    .tgroup { display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      padding: 6px 8px; background: rgba(255,253,252,.5); border: 1px solid var(--line-soft);
+      border-radius: 11px; box-shadow: var(--raise); }
+    .toolbar input { width: auto; min-width: 130px; }
+    details.tools { position: relative; }
+    details.tools > summary { list-style: none; cursor: pointer; font-weight: 700; color: var(--ink);
+      background: linear-gradient(180deg, #fdfaf8, #ece3de); border: 1px solid var(--line);
+      border-radius: 9px; padding: 9px 15px; box-shadow: var(--raise), 0 2px 4px rgba(70,34,26,.12); }
+    details.tools > summary::-webkit-details-marker { display: none; }
+    .toolsmenu { position: absolute; z-index: 20; margin-top: 8px; min-width: 240px; display: flex;
+      flex-direction: column; gap: 8px; padding: 12px; background: linear-gradient(180deg, #fffdfc, #f4ece8);
+      border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-2); }
+    .toolrow { display: flex; gap: 6px; }
+    .toolrow input { flex: 1; min-width: 0; }
+
+    #paste { display: none; padding: 14px 22px; background: rgba(253,250,248,.7);
+      border-bottom: 1px solid var(--line); }
+    #paste textarea { width: 100%; margin: 6px 0; }
+    #cy { height: calc(100vh - 132px);
+      background: radial-gradient(circle at 50% 32%, #2c2522 0%, #1b1613 78%);
+      box-shadow: inset 0 8px 24px rgba(0,0,0,.45); }
+
+    .muted { color: var(--ink-soft); font-size: 13px; }
+    .error { color: #c0403d; font-size: 13px; }
+    .legend { display: flex; gap: 14px; align-items: center; margin-left: auto; color: var(--ink-soft); font-size: 12px; }
+    .dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 5px; vertical-align: middle; box-shadow: var(--raise); }
+
+    #personCard { position: fixed; top: 150px; right: 26px; width: 290px;
+      background: linear-gradient(180deg, #fffdfc, #f5eee9); border: 1px solid var(--line);
+      border-radius: 16px; padding: 18px; box-shadow: var(--shadow-2); }
+    #personCard input { width: 100%; margin: 3px 0; }
+    .cardhead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
+    .cardhead strong { font-family: 'Fraunces', serif; font-size: 19px; }
+    .cardlabel { font-size: 11px; color: var(--ink-soft); display: block; margin-top: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .05em; }
+    .cardactions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
   </style>
 </head>
 <body>
@@ -102,24 +178,36 @@
     </div>
     <div id="mapView" style="display:none">
     <div class="toolbar">
-      <input id="pname" placeholder="Add a person (name)" onkeydown="if(event.key==='Enter')addPerson()" />
-      <input id="pcompany" placeholder="company (optional)" onkeydown="if(event.key==='Enter')addPerson()" />
-      <input id="pknown" placeholder="known through (optional)" onkeydown="if(event.key==='Enter')addPerson()" />
-      <button onclick="addPerson()">Add</button>
-      <button class="secondary" onclick="deleteSelected()">Delete selected</button>
-      <button class="ghost" onclick="togglePaste()">Import from a message</button>
+      <div class="tgroup">
+        <input id="pname" placeholder="Add a person" onkeydown="if(event.key==='Enter')addPerson()" />
+        <input id="pcompany" placeholder="company" onkeydown="if(event.key==='Enter')addPerson()" />
+        <input id="pknown" placeholder="known through" onkeydown="if(event.key==='Enter')addPerson()" />
+        <button onclick="addPerson()">Add</button>
+        <button class="iconbtn danger" title="Delete the selected node" onclick="deleteSelected()">&#128465;</button>
+      </div>
+      <div class="tgroup">
+        <input id="searchQuery" placeholder="search by meaning" onkeydown="if(event.key==='Enter')runSearch()" />
+        <button onclick="runSearch()">Search</button>
+      </div>
+      <details class="tools">
+        <summary>Tools</summary>
+        <div class="toolsmenu">
+          <button class="ghost" onclick="togglePaste()">Import from a message</button>
+          <div class="toolrow">
+            <input id="introCompany" placeholder="who can get me into... (company)" onkeydown="if(event.key==='Enter')findPaths()" />
+            <button onclick="findPaths()">Paths</button>
+          </div>
+          <button class="secondary" onclick="syncGraph()">Sync graph to Neo4j</button>
+          <button class="secondary" onclick="reindexSearch()">Reindex search</button>
+        </div>
+      </details>
       <span id="addStatus" class="muted"></span>
-      <input id="introCompany" placeholder="who can get me into... (company)" onkeydown="if(event.key==='Enter')findPaths()" />
-      <button onclick="findPaths()">Find paths</button>
-      <button class="secondary" onclick="syncGraph()">Sync</button>
-      <button class="secondary" onclick="reindexSearch()">Reindex search</button>
-      <input id="searchQuery" placeholder="search your network by meaning" onkeydown="if(event.key==='Enter')runSearch()" />
-      <button onclick="runSearch()">Search</button>
       <span id="searchStatus" class="muted"></span>
       <span id="pathStatus" class="muted"></span>
       <span class="legend">
-        <span><span class="dot" style="background:#10b981"></span>person</span>
-        <span><span class="dot" style="background:#6366f1"></span>company</span>
+        <span><span class="dot" style="background:#5aa469"></span>person</span>
+        <span><span class="dot" style="background:#c87f43"></span>company</span>
+        <span><span class="dot" style="background:#e16347"></span>you</span>
       </span>
     </div>
 
@@ -389,14 +477,15 @@
       interaction: { hover: true, dragNodes: true, dragView: true, zoomView: true },
       nodes: {
         borderWidth: 2,
-        font: { color: "#e2e8f0", size: 15, face: "system-ui" },
-        shadow: { enabled: true, color: "rgba(0,0,0,0.45)", size: 14, x: 0, y: 3 },
+        font: { color: "#f3ece8", size: 17, face: "Mulish, system-ui", multi: "md",
+                ital: { color: "#f0b99f", size: 13, face: "Mulish, system-ui" } },
+        shadow: { enabled: true, color: "rgba(0,0,0,0.5)", size: 16, x: 0, y: 4 },
       },
       edges: {
-        color: { color: "#3b4862", highlight: "#94a3b8", hover: "#64748b" },
+        color: { color: "#6b5f5a", highlight: "#cbb9b0", hover: "#8a7c75" },
         width: 1.5,
         smooth: { enabled: true, type: "continuous" },
-        font: { color: "#7c8aa5", size: 10, strokeWidth: 0, align: "top" },
+        font: { color: "#b3a59d", size: 11, strokeWidth: 0, align: "top", face: "Mulish, system-ui" },
         arrows: { to: { enabled: true, scaleFactor: 0.55 } },
       },
     };
@@ -457,22 +546,26 @@
       if (n.type === "you") {
         return {
           id: n.id,
-          label: n.label,
+          label: "**You**",
           shape: "dot",
-          size: 28,
-          color: { background: "#f59e0b", border: "#fcd34d",
-                   highlight: { background: "#fbbf24", border: "#fde68a" } },
+          size: 30,
+          color: { background: "#e16347", border: "#f0b99f",
+                   highlight: { background: "#ec7a60", border: "#ffd2c7" } },
         };
       }
       const isCompany = n.type === "company";
+      let label = n.label;
+      if (!isCompany && n.sublabel) {
+        label = n.label + "\n_(" + n.sublabel + ")_";
+      }
       return {
         id: n.id,
-        label: n.label,
+        label: label,
         shape: isCompany ? "hexagon" : "dot",
-        size: isCompany ? 24 : 16,
+        size: isCompany ? 28 : 19,
         color: isCompany
-          ? { background: "#6366f1", border: "#a5b4fc", highlight: { background: "#818cf8", border: "#c7d2fe" } }
-          : { background: "#10b981", border: "#6ee7b7", highlight: { background: "#34d399", border: "#a7f3d0" } },
+          ? { background: "#c87f43", border: "#e3b07e", highlight: { background: "#d8924f", border: "#f0c79a" } }
+          : { background: "#5aa469", border: "#8fd0a0", highlight: { background: "#6cba7d", border: "#abe0b8" } },
       };
     }
 
@@ -484,8 +577,8 @@
         from: e.source,
         to: e.target,
         label: e.label,
-        color: { color: isWork ? "#3b4862" : "#0e7490",
-                 highlight: "#94a3b8", hover: "#64748b" },
+        color: { color: isWork ? "#6b5f5a" : "#cf8a5e",
+                 highlight: "#e3b07e", hover: "#cf8a5e" },
         dashes: isWork ? false : [6, 4],
       };
     }

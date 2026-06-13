@@ -32,7 +32,12 @@ def build_graph(db: Session, user_id: str) -> GraphResponse:
 
     for person in people:
         nodes.append(
-            GraphNode(id=f"person:{person.id}", label=person.name, type="person")
+            GraphNode(
+                id=f"person:{person.id}",
+                label=person.name,
+                type="person",
+                sublabel=person.title,
+            )
         )
         if person.company_id is not None:
             edges.append(
