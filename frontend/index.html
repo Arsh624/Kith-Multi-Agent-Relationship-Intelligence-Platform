@@ -188,6 +188,12 @@
     .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
     .modal-head span { font-size: 22px; font-weight: 600; }
     .modal input { width: 100%; margin: 6px 0; }
+    .pwwrap { position: relative; }
+    .pwwrap input { padding-right: 64px; }
+    .pwtoggle { position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+      background: none; border: none; padding: 4px 6px; font-size: 12px; cursor: pointer;
+      color: var(--dim); letter-spacing: .04em; }
+    .pwtoggle:hover { color: var(--text); }
     .authbtns { display: flex; gap: 8px; margin-top: 8px; }
   </style>
 </head>
@@ -246,7 +252,11 @@
         <button class="ghost" onclick="closeAuth()">&times;</button>
       </div>
       <input id="email" type="email" placeholder="email" />
-      <input id="password" type="password" placeholder="password" />
+      <div class="pwwrap">
+        <input id="password" type="password" placeholder="password" />
+        <button type="button" id="pwToggle" class="pwtoggle" title="Show password"
+          onclick="togglePassword()">Show</button>
+      </div>
       <div class="authbtns">
         <button onclick="login()">Log in</button>
         <button class="secondary" onclick="register()">Register</button>
@@ -528,6 +538,15 @@
       if (m) m.classList.remove("open");
     }
 
+    function togglePassword() {
+      const input = document.getElementById("password");
+      const btn = document.getElementById("pwToggle");
+      const show = input.type === "password";
+      input.type = show ? "text" : "password";
+      btn.textContent = show ? "Hide" : "Show";
+      btn.title = show ? "Hide password" : "Show password";
+    }
+
     function showLanding() {
       document.getElementById("app").style.display = "none";
       document.getElementById("landing").style.display = "block";
@@ -771,6 +790,7 @@
         await api("/people/" + cardPersonId, { method: "PATCH", body: JSON.stringify(body) });
         document.getElementById("cardStatus").textContent = "Saved.";
         openPersonCard(cardPersonId);
+        loadGraph();
       } catch (e) { document.getElementById("cardStatus").textContent = e.message || "Save failed."; }
     }
 
