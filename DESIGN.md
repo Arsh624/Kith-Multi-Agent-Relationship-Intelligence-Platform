@@ -5,50 +5,50 @@ deviations edit this file first, then code.
 
 ## Direction
 
-**Warm analog desk.** Kith is a personal contact organizer, so it should feel like a
-physical Rolodex / index-card box on a warm wooden desk, not a cold SaaS dashboard. This
-is the deliberate antidote to the generic AI look (cyan-on-dark, flat cards, Inter) the
-first version had.
+**Quiet modern.** Minimal, confident, current. Near-black warm-neutral canvas, one rose
+accent, hairline structure, generous negative space. No ornament, no skeuomorphism, no AI
+slop (no cyan-on-dark, no glassmorphism, no neon, no Inter). Dark by default with a real
+light toggle.
 
-- **Register:** product, but with brand-level personality (it is a portfolio piece).
-- **Personality words:** warm, tactile, considered.
-- **Light theme.** Parchment surfaces, ink text. We explicitly reject dark-mode-by-default.
+- **Register:** product with portfolio-grade polish.
+- **Personality words:** minimal, modern, precise.
+- **Theme:** dark default, light optional, both first-class. Toggle persists per user.
 
 ## Typography
 
-- **Display / wordmark / headings:** Fraunces (warm characterful serif). Not a default.
-- **Body / UI:** Mulish (humanist sans). Not Inter/Roboto/Open Sans/Arial.
-- Loaded from Google Fonts. Body 16px min, leading 1.4. Smart proportions, not uniform.
+- **Display / wordmark / headings / numerals:** Space Grotesk (modern grotesk, tight).
+- **Body / UI:** Hanken Grotesk. Neither is Inter/Roboto/Open Sans/Arial.
+- Google Fonts. Body 15-16px, leading 1.45. Tight heading tracking. Hierarchy by weight
+  and space, not boxes.
 
-## Color (from palette.mjs, seed hue 34, balanced, complementary, contrast-checked)
+## Color (palette.mjs, seed hue 12, balanced, analogous, contrast-checked)
 
-Paper neutrals + terracotta accent + cool counter for links; functional colors as given.
+Warm-neutral grays + a single rose accent. Themed via `[data-theme]`.
 
-- `--paper` #faf8f8 surface, `--paper-deep` #f3efef, `--ink` #312d2c text,
-  `--ink-soft` #69615f secondary.
-- `--accent` #e16347 (terracotta) primary actions; `--accent-press` #c85339.
-- `--line` #cbc1be borders.
-- Graph node colors: person `--person` #5aa469 (warm green), company `--company` #c87f43
-  (tan), You `--you` #e16347 (terracotta). Edges warm grey; relationship edges dashed.
-- Functional: error #e1524f, success #5ad664, warning #dbb155.
-- Map canvas is a warm dark "desk" (`#241f1d` radial) so the bright nodes pop, but all
-  app chrome is light paper.
+Dark (default): bg #131212, surface #1a1919, surface-2 #242122, border #2d2929,
+text #ece6e7, dim #beb5b5, faint #978889. Accent #e2546f, hover #f36b82.
+Light: bg #fdfcfc, surface #faf8f8, surface-2 #f3eff0, border #ece6e7,
+text #312d2d, dim #696161. Accent #e2546f, hover #c9455f.
 
-## Skeuomorphic detail rules
+Graph nodes: you = accent #e2546f, person = #5fb98e (soft green), company = #6f86c9
+(muted indigo). Functional: error #e1524f, success #5ad664, warning #dbb155.
 
-- **Buttons are tactile:** subtle top-to-bottom gradient, 1px top highlight, soft drop
-  shadow; on `:active` they press down (translateY 1px, shadow shrinks).
-- **Inputs look inset:** faint inner shadow, paper fill.
-- **Cards/panels:** layered, hue-shifted soft shadows (warm, never pure black) for real
-  depth, not a flat 1px border. Depth hierarchy: raised controls > panels > page.
-- **No AI tells:** no glassmorphism, no neon glow, no cyan-on-dark, left-aligned text,
-  varied spacing (tight within groups, generous between).
+## Style rules
+
+- **Flat and crisp, not tactile.** Elevation by a slightly lighter surface and a 1px
+  hairline border, not heavy shadows or bevels. Subtle shadow only on floating panels.
+- Primary button: solid accent. Secondary: surface + hairline. Hover lightens; active
+  nudges 1px. Focus: 2px accent ring.
+- Inputs: surface fill, hairline border, accent focus ring. No inner-shadow skeuomorphism.
+- Rounded corners 10-12px. Tabs are a minimal underline (active = accent underline), not
+  folders.
+- Spacing varied: tight within groups, generous between. Left-aligned.
 
 ## Layout rules
 
-- Two tabs: Good Morning (tasks) and Map. Tabs look like physical file folders.
-- **Map toolbar declutter:** primary actions (Add person, Search) stay visible; secondary
-  tools (Import message, Sync, Reindex, Find paths) live behind a "Tools" menu; Delete is a
-  small red trash icon, not a wide button.
-- Graph nodes show the name plus the role in parentheses beneath, the role in a lighter
-  accent color, so you know who someone is at a glance. Labels ~10% larger than before.
+- Two tabs renamed: **Today** (tasks) and **Network** (graph).
+- Header carries the wordmark, a theme toggle, and Log out.
+- Map toolbar declutter stays: primary Add-person + Search visible; Import/Sync/Reindex/
+  Find-paths behind a Tools menu; Delete is a small accent/red icon.
+- Graph nodes show the name with the role on a second line in the accent color (parens),
+  so role is readable at a glance. Canvas + label colors follow the active theme.
