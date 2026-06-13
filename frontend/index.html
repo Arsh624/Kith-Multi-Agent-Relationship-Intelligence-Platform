@@ -4,6 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kith</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/favicon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
@@ -35,6 +37,7 @@
       position: absolute; top: 0; left: 0; right: 0; z-index: 30; }
     .brand { font-family: 'Space Grotesk', sans-serif; font-weight: 700;
       font-size: clamp(30px, 4vw, 44px); letter-spacing: -.04em; line-height: 1; }
+    body.on-landing .brand { font-size: clamp(64px, 9vw, 92px); letter-spacing: -.05em; }
     .headright { display: flex; align-items: center; gap: 10px; }
     #app { display: none; padding-top: 84px; }
 
@@ -499,6 +502,7 @@
       document.getElementById("logout").style.display = "none";
       document.getElementById("themeToggle").style.display = "none";
       document.documentElement.setAttribute("data-theme", "dark");
+      document.body.classList.add("on-landing");
       closeAuth();
       if (window.__grainient) window.__grainient.start();
     }
@@ -513,6 +517,7 @@
       document.getElementById("app").style.display = "block";
       document.getElementById("logout").style.display = "inline-block";
       document.getElementById("themeToggle").style.display = "inline-block";
+      document.body.classList.remove("on-landing");
       applyTheme(localStorage.getItem("kith_theme") || "dark");
       closeAuth();
       if (window.__grainient) window.__grainient.stop();
