@@ -131,7 +131,11 @@
     .cardrow { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
     .cardrow input[type="color"] { width: 46px; height: 34px; padding: 2px; flex: 0 0 auto; cursor: pointer; }
     .cardrow button { padding: 7px 10px; font-size: 13px; }
-    #cardStar.fav { background: #f5c518; color: #1a1700; border-color: #f5c518; }
+    .cardname-wrap { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .starbtn { background: none; border: none; padding: 0; cursor: pointer; line-height: 1;
+      font-size: 24px; color: var(--dim); flex: 0 0 auto; }
+    .starbtn:hover { color: #f5c518; }
+    .starbtn.fav { color: #f5c518; }
 
     /* sharp edges everywhere (modern, no curvature) */
     button, input, textarea, select, .themetoggle, .iconbtn, .badge,
@@ -316,7 +320,10 @@
     <div id="cy"></div>
     <div id="personCard" style="display:none">
       <div class="cardhead">
-        <strong id="cardName"></strong>
+        <div class="cardname-wrap">
+          <button id="cardStar" class="starbtn" title="Mark favorite" onclick="toggleFavorite()">&#9734;</button>
+          <strong id="cardName"></strong>
+        </div>
         <button class="taskdel" onclick="closeCard()">close</button>
       </div>
       <div id="cardCompany" class="muted"></div>
@@ -332,7 +339,6 @@
       <div class="cardrow">
         <input type="color" id="cardColor" onchange="setPersonColor()" />
         <button class="secondary" onclick="resetPersonColor()">Reset</button>
-        <button id="cardStar" class="secondary" onclick="toggleFavorite()">&#9734; Favorite</button>
       </div>
       <div class="cardactions">
         <button onclick="savePersonCard()">Save</button>
@@ -675,8 +681,8 @@
 
     function updateStarButton() {
       const b = document.getElementById("cardStar");
-      if (cardFavorite) { b.classList.add("fav"); b.innerHTML = "★ Favorited"; }
-      else { b.classList.remove("fav"); b.innerHTML = "☆ Favorite"; }
+      if (cardFavorite) { b.classList.add("fav"); b.innerHTML = "&#9733;"; b.title = "Favorited (click to unfavorite)"; }
+      else { b.classList.remove("fav"); b.innerHTML = "&#9734;"; b.title = "Mark favorite"; }
     }
 
     async function openPersonCard(personId) {
