@@ -93,8 +93,13 @@
       text-transform: uppercase; letter-spacing: .05em; }
     .badge.high { background: #d9434a; } .badge.medium { background: #c98b2c; } .badge.low { background: #4f8fc4; }
     .deadline { color: var(--dim); font-size: 12px; }
-    .taskdel { background: transparent; border: none; color: var(--faint); padding: 2px 6px; font-weight: 600; }
-    .taskdel:hover { color: var(--accent); }
+    .taskdel, .taskedit, .taskcancel { background: transparent; border: none; color: var(--faint);
+      padding: 2px 6px; font-weight: 600; }
+    .taskdel:hover, .taskedit:hover, .taskcancel:hover { color: var(--accent); }
+    .taskrow.editing { gap: 8px; }
+    .taskrow.editing .editTitle { flex: 1; min-width: 120px; }
+    .taskrow.editing input, .taskrow.editing select { margin: 0; }
+    .tasksave { padding: 5px 12px; font-weight: 600; }
 
     .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 24px;
       border-bottom: 1px solid var(--border); }
@@ -450,19 +455,63 @@
       list.innerHTML = "";
       for (const t of tasks) {
         const li = document.createElement("li");
-        li.className = "taskrow" + (t.done ? " done" : "");
-        const deadline = t.deadline ? '<span class="deadline">due ' + t.deadline + "</span>" : "";
-        li.innerHTML =
-          '<input type="checkbox" ' + (t.done ? "checked" : "") + " />" +
-          '<span class="tasktitle"></span>' +
-          '<span class="badge ' + t.priority + '">' + t.priority + "</span>" +
-          deadline +
-          '<button class="taskdel">delete</button>';
-        li.querySelector(".tasktitle").textContent = t.title;
-        li.querySelector("input").onchange = function (e) { toggleTask(t.id, e.target.checked); };
-        li.querySelector(".taskdel").onclick = function () { deleteTask(t.id); };
+        renderTaskRow(li, t);
         list.appendChild(li);
       }
+    }
+
+    function renderTaskRow(li, t) {
+      li.className = "taskrow" + (t.done ? " done" : "");
+      const deadline = t.deadline ? '<span class="deadline">due ' + t.deadline + "</span>" : "";
+      li.innerHTML =
+        '<input type="checkbox" ' + (t.done ? "checked" : "") + " />" +
+        '<span class="tasktitle"></span>' +
+        '<span class="badge ' + t.priority + '">' + t.priority + "</span>" +
+        deadline +
+        '<button class="taskedit">edit</button>' +
+        '<button class="taskdel">delete</button>';
+      li.querySelector(".tasktitle").textContent = t.title;
+      li.querySelector("input").onchange = function (e) { toggleTask(t.id, e.target.checked); };
+      li.querySelector(".taskedit").onclick = function () { editTaskRow(li, t); };
+      li.querySelector(".taskdel").onclick = function () { deleteTask(t.id); };
+    }
+
+    function editTaskRow(li, t) {
+      li.className = "taskrow editing";
+      li.innerHTML =
+        '<input class="editTitle" type="text" />' +
+        '<input class="editDeadline" type="date" />' +
+        '<select class="editPriority">' +
+        '<option value="high">high</option>' +
+        '<option value="medium">medium</option>' +
+        '<option value="low">low</option>' +
+        '</select>' +
+        '<button class="tasksave">save</button>' +
+        '<button class="taskcancel">cancel</button>';
+      li.querySelector(".editTitle").value = t.title;
+      li.querySelector(".editDeadline").value = t.deadline || "";
+      li.querySelector(".editPriority").value = t.priority;
+      const save = function () {
+        const title = li.querySelector(".editTitle").value.trim();
+        if (!title) { li.querySelector(".editTitle").focus(); return; }
+        saveTaskEdit(t.id, {
+          title: title,
+          deadline: li.querySelector(".editDeadline").value || null,
+          priority: li.querySelector(".editPriority").value,
+        });
+      };
+      li.querySelector(".tasksave").onclick = save;
+      li.querySelector(".taskcancel").onclick = function () { renderTaskRow(li, t); };
+      li.querySelector(".editTitle").onkeydown = function (e) {
+        if (e.key === "Enter") save();
+        if (e.key === "Escape") renderTaskRow(li, t);
+      };
+      li.querySelector(".editTitle").focus();
+    }
+
+    async function saveTaskEdit(id, body) {
+      await api("/tasks/" + id, { method: "PATCH", body: JSON.stringify(body) });
+      loadTasks();
     }
 
     async function addTask() {

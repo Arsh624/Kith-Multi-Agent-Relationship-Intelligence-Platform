@@ -9,7 +9,7 @@ from app.services.tasks import (
     create_task,
     delete_task,
     list_tasks,
-    set_task_done,
+    update_task,
 )
 
 router = APIRouter(tags=["tasks"])
@@ -35,13 +35,15 @@ def get_tasks(
 
 
 @router.patch("/tasks/{task_id}", response_model=TaskOut)
-def update_task(
+def update_task_endpoint(
     task_id: str,
     payload: TaskUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    task = set_task_done(db, current_user.id, task_id, payload.done)
+    task = update_task(
+        db, current_user.id, task_id, payload.model_dump(exclude_unset=True)
+    )
     if task is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Task not found"

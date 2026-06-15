@@ -11,7 +11,10 @@ class TaskCreate(BaseModel):
 
 
 class TaskUpdate(BaseModel):
-    done: bool
+    done: Optional[bool] = None
+    title: Optional[str] = None
+    deadline: Optional[date] = None
+    priority: Optional[str] = None
 
 
 class TaskOut(BaseModel):

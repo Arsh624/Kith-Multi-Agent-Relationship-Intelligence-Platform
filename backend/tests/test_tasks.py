@@ -96,6 +96,49 @@ def test_task_endpoints_crud(client):
     assert client.delete(f"/tasks/{task_id}", headers=headers).status_code == 404
 
 
+def test_task_edit_fields(client):
+    headers = _register(client)
+    created = client.post(
+        "/tasks",
+        headers=headers,
+        json={"title": "Call Dipunj", "priority": "low", "deadline": "2026-07-01"},
+    )
+    task_id = created.json()["id"]
+
+    edited = client.patch(
+        f"/tasks/{task_id}",
+        headers=headers,
+        json={"title": "Call Dipunj Gupta", "priority": "high", "deadline": None},
+    )
+    assert edited.status_code == 200
+    body = edited.json()
+    assert body["title"] == "Call Dipunj Gupta"
+    assert body["priority"] == "high"
+    assert body["deadline"] is None
+    # done was not touched by the edit
+    assert body["done"] is False
+
+
+def test_task_edit_partial_keeps_other_fields(client):
+    headers = _register(client)
+    created = client.post(
+        "/tasks",
+        headers=headers,
+        json={"title": "Original", "priority": "medium", "deadline": "2026-08-15"},
+    )
+    task_id = created.json()["id"]
+
+    edited = client.patch(
+        f"/tasks/{task_id}", headers=headers, json={"title": "Renamed"}
+    )
+    assert edited.status_code == 200
+    body = edited.json()
+    assert body["title"] == "Renamed"
+    # untouched fields survive a partial update
+    assert body["priority"] == "medium"
+    assert body["deadline"] == "2026-08-15"
+
+
 def test_task_create_without_deadline(client):
     headers = _register(client)
     response = client.post("/tasks", headers=headers, json={"title": "Just do it"})
