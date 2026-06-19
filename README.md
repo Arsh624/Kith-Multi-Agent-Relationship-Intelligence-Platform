@@ -195,8 +195,8 @@ frontend/
 
 ## Disclaimer
 
-Built by Archit Shukla. I designed the system, made the architecture and product
-decisions, chose the data stores and the boundaries between them, and integrated and
-deployed it. Claude Code (Anthropic) was used as a pair-programming assistant to help
-implement and review code under that direction. The design, the decisions, and the
-ownership of this project are mine.
+Built by Archit Shukla and Saumya Singh. We designed the system, made the architecture
+and product decisions, chose the data stores and the boundaries between them, and
+integrated and deployed it. Claude Code (Anthropic) was used as a pair-programming
+assistant to help implement and review code under our direction. The design, the
+decisions, and the ownership of this project are ours.
