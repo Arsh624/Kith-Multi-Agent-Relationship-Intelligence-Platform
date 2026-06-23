@@ -8,9 +8,19 @@ from app.models.company import Company
 from app.models.person import Person
 from app.models.user import User
 from app.schemas.paste import PersonOut
-from app.schemas.people import PersonCreate, PersonDetail, PersonPatch
+from app.schemas.people import (
+    PersonCreate,
+    PersonDetail,
+    PersonListItem,
+    PersonPatch,
+)
 from app.services.contacts import get_contact, upsert_contact
-from app.services.people import KnownThroughNotFound, add_person, delete_person
+from app.services.people import (
+    KnownThroughNotFound,
+    add_person,
+    delete_person,
+    list_people,
+)
 
 router = APIRouter(tags=["people"])
 
@@ -43,6 +53,30 @@ def create_person(
         company=company_name,
         note=person.note,
     )
+
+
+@router.get("/people", response_model=list[PersonListItem])
+def get_people(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    people = list_people(db, current_user.id)
+    company_ids = {p.company_id for p in people if p.company_id is not None}
+    company_names = {}
+    for company_id in company_ids:
+        company = db.get(Company, company_id)
+        if company is not None:
+            company_names[company_id] = company.name
+    return [
+        PersonListItem(
+            id=p.id,
+            name=p.name,
+            title=p.title,
+            company=company_names.get(p.company_id),
+            favorite=bool(p.favorite),
+        )
+        for p in people
+    ]
 
 
 @router.delete("/people/{person_id}", status_code=status.HTTP_204_NO_CONTENT)

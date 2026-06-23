@@ -101,6 +101,24 @@
     .taskrow.editing input, .taskrow.editing select { margin: 0; }
     .tasksave { padding: 5px 12px; font-weight: 600; }
 
+    #peopleView { padding: 34px 24px; max-width: 700px; }
+    .peoplehead { display: flex; align-items: baseline; gap: 12px; margin: 0 0 18px; }
+    .peoplehead h2 { font-size: 30px; margin: 0; font-weight: 600; }
+    .peopleform { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 14px; align-items: center; }
+    .peopleform input { width: auto; }
+    .peopleform #ppname { flex: 1; min-width: 200px; }
+    .peoplefilter { width: 100%; margin: 0 0 14px; }
+    .peoplelist { list-style: none; padding: 0; margin: 0; }
+    .personrow { display: flex; align-items: center; gap: 13px; padding: 14px 4px;
+      border-bottom: 1px solid var(--border); }
+    .pinfo { flex: 1; min-width: 0; display: flex; align-items: baseline;
+      gap: 8px; flex-wrap: wrap; }
+    .pname { font-weight: 600; }
+    .pstar { color: #f5c518; font-size: 13px; }
+    .pmeta { color: var(--dim); font-size: 13px; }
+    .pactions { display: flex; gap: 4px; align-items: center; flex: 0 0 auto; }
+    .pedit { padding: 5px 12px; font-weight: 600; }
+
     .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 24px;
       border-bottom: 1px solid var(--border); }
     .tgroup { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -280,8 +298,9 @@
 
   <div id="app">
     <div class="tabs">
-      <button id="tabTasks" class="tab active" onclick="showTab('tasks')">Today</button>
+      <button id="tabTasks" class="tab active" onclick="showTab('tasks')">Tasks</button>
       <button id="tabMap" class="tab" onclick="showTab('map')">Network</button>
+      <button id="tabPeople" class="tab" onclick="showTab('people')">People</button>
     </div>
     <div id="tasksView">
       <h2 id="greeting">Good morning</h2>
@@ -343,6 +362,22 @@
       <button id="fsBtn" class="fsbtn" onclick="toggleGraphFullscreen()" title="Full screen">Full screen</button>
       <div id="cy"></div>
     </div>
+    </div>
+    <div id="peopleView" style="display:none">
+      <div class="peoplehead">
+        <h2>People</h2>
+        <span id="peopleCount" class="muted"></span>
+      </div>
+      <div class="peopleform">
+        <input id="ppname" placeholder="Add a person" onkeydown="if(event.key==='Enter')addPersonFromPeople()" />
+        <input id="ppcompany" placeholder="company" onkeydown="if(event.key==='Enter')addPersonFromPeople()" />
+        <button onclick="addPersonFromPeople()">Add</button>
+        <span id="ppAddStatus" class="muted"></span>
+      </div>
+      <input id="peopleFilter" class="peoplefilter" placeholder="Filter by name, company, or role" oninput="renderPeople()" />
+      <ul id="peopleList" class="peoplelist"></ul>
+      <p id="peopleEmpty" class="muted" style="display:none">No people yet. Add contacts from the Network tab.</p>
+    </div>
     <div id="personCard" style="display:none">
       <div class="cardhead">
         <div class="cardname-wrap">
@@ -383,7 +418,6 @@
         <button class="secondary" onclick="resetCompanyColor()">Reset</button>
       </div>
       <span id="companyCardStatus" class="muted"></span>
-    </div>
     </div>
   </div>
 
@@ -438,12 +472,82 @@
     }
 
     function showTab(name) {
-      const tasks = name === "tasks";
-      document.getElementById("tasksView").style.display = tasks ? "block" : "none";
-      document.getElementById("mapView").style.display = tasks ? "none" : "block";
-      document.getElementById("tabTasks").classList.toggle("active", tasks);
-      document.getElementById("tabMap").classList.toggle("active", !tasks);
-      if (tasks) loadTasks();
+      const views = { tasks: "tasksView", map: "mapView", people: "peopleView" };
+      const tabs = { tasks: "tabTasks", map: "tabMap", people: "tabPeople" };
+      for (const key in views) {
+        document.getElementById(views[key]).style.display = key === name ? "block" : "none";
+        document.getElementById(tabs[key]).classList.toggle("active", key === name);
+      }
+      if (name === "tasks") loadTasks();
+      else if (name === "people") loadPeople();
+    }
+
+    let peopleCache = [];
+    async function loadPeople() {
+      peopleCache = await api("/people");
+      renderPeople();
+    }
+    function renderPeople() {
+      const q = (document.getElementById("peopleFilter").value || "").trim().toLowerCase();
+      const list = document.getElementById("peopleList");
+      const items = peopleCache.filter(function (p) {
+        if (!q) return true;
+        return [p.name, p.company, p.title].some(function (v) {
+          return v && v.toLowerCase().indexOf(q) !== -1;
+        });
+      });
+      document.getElementById("peopleCount").textContent =
+        peopleCache.length + (peopleCache.length === 1 ? " person" : " people");
+      document.getElementById("peopleEmpty").style.display = peopleCache.length ? "none" : "block";
+      list.innerHTML = "";
+      for (const p of items) {
+        const li = document.createElement("li");
+        li.className = "personrow";
+        li.innerHTML =
+          '<div class="pinfo">' +
+            '<span class="pname"></span>' +
+            (p.favorite ? '<span class="pstar">★</span>' : "") +
+            '<span class="pmeta"></span>' +
+          '</div>' +
+          '<div class="pactions">' +
+            '<button class="secondary pedit">Edit</button>' +
+            '<button class="taskdel premove">remove</button>' +
+          '</div>';
+        li.querySelector(".pname").textContent = p.name;
+        li.querySelector(".pmeta").textContent =
+          [p.title, p.company].filter(Boolean).join("  ·  ");
+        li.querySelector(".pedit").onclick = function () { openPersonCard(p.id); };
+        li.querySelector(".premove").onclick = function () { removePersonFromList(p.id, p.name); };
+        list.appendChild(li);
+      }
+    }
+    async function addPersonFromPeople() {
+      const name = document.getElementById("ppname").value.trim();
+      const company = document.getElementById("ppcompany").value.trim();
+      const status = document.getElementById("ppAddStatus");
+      if (!name) { status.textContent = "Enter a name."; return; }
+      status.textContent = "Adding...";
+      try {
+        await api("/people", { method: "POST", body: JSON.stringify({
+          name: name,
+          company: company || null,
+          known_through: null,
+        }) });
+        document.getElementById("ppname").value = "";
+        document.getElementById("ppcompany").value = "";
+        status.textContent = "";
+        await loadPeople();
+        if (network) loadGraph();
+      } catch (e) { status.textContent = e.message || "Failed to add."; }
+    }
+    async function removePersonFromList(id, name) {
+      if (!confirm("Remove " + name + "?")) return;
+      await api("/people/" + id, { method: "DELETE" });
+      await loadPeople();
+      if (network) loadGraph();
+    }
+    function refreshPeopleIfVisible() {
+      if (document.getElementById("peopleView").style.display !== "none") loadPeople();
     }
 
     async function loadTasks() {
@@ -806,6 +910,7 @@
       await api("/people/" + cardPersonId, { method: "PATCH",
         body: JSON.stringify({ favorite: cardFavorite }) });
       loadGraph();
+      refreshPeopleIfVisible();
     }
 
     let cardCompanyId = null;
@@ -850,6 +955,7 @@
         document.getElementById("cardStatus").textContent = "Saved.";
         openPersonCard(cardPersonId);
         loadGraph();
+        refreshPeopleIfVisible();
       } catch (e) { document.getElementById("cardStatus").textContent = e.message || "Save failed."; }
     }
 

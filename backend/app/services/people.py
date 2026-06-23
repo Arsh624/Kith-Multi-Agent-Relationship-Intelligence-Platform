@@ -36,6 +36,16 @@ def add_person(
     return person
 
 
+def list_people(db: Session, user_id: str) -> list[Person]:
+    return list(
+        db.scalars(
+            select(Person)
+            .where(Person.user_id == user_id)
+            .order_by(Person.name)
+        ).all()
+    )
+
+
 def delete_person(db: Session, user_id: str, person_id: str) -> bool:
     person = db.scalar(
         select(Person).where(Person.id == person_id, Person.user_id == user_id)

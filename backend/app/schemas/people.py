@@ -22,6 +22,14 @@ class PersonDetail(BaseModel):
     favorite: bool = False
 
 
+class PersonListItem(BaseModel):
+    id: str
+    name: str
+    title: Optional[str] = None
+    company: Optional[str] = None
+    favorite: bool = False
+
+
 class PersonPatch(BaseModel):
     title: Optional[str] = None
     email: Optional[str] = None
