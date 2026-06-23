@@ -151,3 +151,22 @@ def test_task_create_without_deadline(client):
 def test_tasks_require_auth(client):
     assert client.get("/tasks").status_code in (401, 403)
     assert client.post("/tasks", json={"title": "x"}).status_code in (401, 403)
+
+
+def test_reorder_tasks_persists_manual_order(client):
+    headers = _register(client, "reorder@example.com")
+    ids = [
+        client.post("/tasks", headers=headers, json={"title": t}).json()["id"]
+        for t in ("a", "b", "c")
+    ]
+    new_order = [ids[2], ids[0], ids[1]]
+
+    reordered = client.post(
+        "/tasks/reorder", headers=headers, json={"ids": new_order}
+    )
+    assert reordered.status_code == 200
+    assert [t["id"] for t in reordered.json()] == new_order
+
+    # order survives a fresh list call
+    listed = client.get("/tasks", headers=headers).json()
+    assert [t["id"] for t in listed] == new_order

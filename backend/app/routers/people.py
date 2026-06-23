@@ -13,6 +13,7 @@ from app.schemas.people import (
     PersonDetail,
     PersonListItem,
     PersonPatch,
+    ReorderRequest,
 )
 from app.services.contacts import get_contact, upsert_contact
 from app.services.people import (
@@ -20,6 +21,7 @@ from app.services.people import (
     add_person,
     delete_person,
     list_people,
+    reorder_people,
 )
 
 router = APIRouter(tags=["people"])
@@ -61,6 +63,31 @@ def get_people(
     current_user: User = Depends(get_current_user),
 ):
     people = list_people(db, current_user.id)
+    company_ids = {p.company_id for p in people if p.company_id is not None}
+    company_names = {}
+    for company_id in company_ids:
+        company = db.get(Company, company_id)
+        if company is not None:
+            company_names[company_id] = company.name
+    return [
+        PersonListItem(
+            id=p.id,
+            name=p.name,
+            title=p.title,
+            company=company_names.get(p.company_id),
+            favorite=bool(p.favorite),
+        )
+        for p in people
+    ]
+
+
+@router.post("/people/reorder", response_model=list[PersonListItem])
+def reorder_people_endpoint(
+    payload: ReorderRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    people = reorder_people(db, current_user.id, payload.ids)
     company_ids = {p.company_id for p in people if p.company_id is not None}
     company_names = {}
     for company_id in company_ids:

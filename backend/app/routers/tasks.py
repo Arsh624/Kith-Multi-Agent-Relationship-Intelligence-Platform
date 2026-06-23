@@ -4,11 +4,12 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.deps import get_current_user
 from app.models.user import User
-from app.schemas.tasks import TaskCreate, TaskOut, TaskUpdate
+from app.schemas.tasks import ReorderRequest, TaskCreate, TaskOut, TaskUpdate
 from app.services.tasks import (
     create_task,
     delete_task,
     list_tasks,
+    reorder_tasks,
     update_task,
 )
 
@@ -32,6 +33,15 @@ def get_tasks(
     current_user: User = Depends(get_current_user),
 ):
     return list_tasks(db, current_user.id)
+
+
+@router.post("/tasks/reorder", response_model=list[TaskOut])
+def reorder_tasks_endpoint(
+    payload: ReorderRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return reorder_tasks(db, current_user.id, payload.ids)
 
 
 @router.patch("/tasks/{task_id}", response_model=TaskOut)

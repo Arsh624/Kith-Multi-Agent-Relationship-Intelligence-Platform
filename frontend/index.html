@@ -118,6 +118,11 @@
     .pmeta { color: var(--dim); font-size: 13px; }
     .pactions { display: flex; gap: 4px; align-items: center; flex: 0 0 auto; }
     .pedit { padding: 5px 12px; font-weight: 600; }
+    .draghandle { cursor: grab; color: var(--faint); padding: 2px 8px; font-size: 15px;
+      user-select: none; flex: 0 0 auto; line-height: 1; }
+    .draghandle:hover { color: var(--text); }
+    .draghandle:active { cursor: grabbing; }
+    .taskrow.dragging, .personrow.dragging { opacity: .45; }
 
     .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 12px 24px;
       border-bottom: 1px solid var(--border); }
@@ -503,7 +508,9 @@
       for (const p of items) {
         const li = document.createElement("li");
         li.className = "personrow";
+        li.dataset.id = p.id;
         li.innerHTML =
+          (q ? "" : '<span class="draghandle" title="Drag to reorder">&#9776;</span>') +
           '<div class="pinfo">' +
             '<span class="pname"></span>' +
             (p.favorite ? '<span class="pstar">★</span>' : "") +
@@ -520,6 +527,7 @@
         li.querySelector(".premove").onclick = function () { removePersonFromList(p.id, p.name); };
         list.appendChild(li);
       }
+      setupReorder(list, reorderPeople);
     }
     async function addPersonFromPeople() {
       const name = document.getElementById("ppname").value.trim();
@@ -550,6 +558,73 @@
       if (document.getElementById("peopleView").style.display !== "none") loadPeople();
     }
 
+    function getDragAfterElement(container, y) {
+      const els = Array.prototype.slice.call(
+        container.querySelectorAll("li:not(.dragging)")
+      );
+      let closest = { offset: -Infinity, element: null };
+      for (const el of els) {
+        const box = el.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          closest = { offset: offset, element: el };
+        }
+      }
+      return closest.element;
+    }
+
+    function setupReorder(listEl, onReorder) {
+      listEl.__onReorder = onReorder;
+      if (listEl.__reorderReady) return;
+      listEl.__reorderReady = true;
+      let dragged = null;
+      listEl.addEventListener("mousedown", function (e) {
+        const handle = e.target.closest(".draghandle");
+        if (handle) {
+          const li = handle.closest("li");
+          if (li) li.draggable = true;
+        }
+      });
+      listEl.addEventListener("dragstart", function (e) {
+        const li = e.target.closest("li");
+        if (!li || !li.draggable) return;
+        dragged = li;
+        li.classList.add("dragging");
+        e.dataTransfer.effectAllowed = "move";
+        try { e.dataTransfer.setData("text/plain", li.dataset.id || ""); } catch (_) {}
+      });
+      listEl.addEventListener("dragover", function (e) {
+        if (!dragged) return;
+        e.preventDefault();
+        const after = getDragAfterElement(listEl, e.clientY);
+        if (after == null) listEl.appendChild(dragged);
+        else listEl.insertBefore(dragged, after);
+      });
+      listEl.addEventListener("dragend", function () {
+        if (!dragged) return;
+        dragged.classList.remove("dragging");
+        dragged.draggable = false;
+        dragged = null;
+        const ids = Array.prototype.slice.call(listEl.children)
+          .map(function (li) { return li.dataset.id; })
+          .filter(Boolean);
+        if (listEl.__onReorder) listEl.__onReorder(ids);
+      });
+    }
+
+    async function reorderTasks(ids) {
+      try {
+        await api("/tasks/reorder", { method: "POST", body: JSON.stringify({ ids: ids }) });
+      } catch (e) { /* fall through to reload */ }
+      loadTasks();
+    }
+    async function reorderPeople(ids) {
+      try {
+        await api("/people/reorder", { method: "POST", body: JSON.stringify({ ids: ids }) });
+      } catch (e) { /* fall through to reload */ }
+      loadPeople();
+    }
+
     async function loadTasks() {
       const tasks = await api("/tasks");
       const open = tasks.filter(function (t) { return !t.done; }).length;
@@ -562,12 +637,15 @@
         renderTaskRow(li, t);
         list.appendChild(li);
       }
+      setupReorder(list, reorderTasks);
     }
 
     function renderTaskRow(li, t) {
       li.className = "taskrow" + (t.done ? " done" : "");
+      li.dataset.id = t.id;
       const deadline = t.deadline ? '<span class="deadline">due ' + t.deadline + "</span>" : "";
       li.innerHTML =
+        '<span class="draghandle" title="Drag to reorder">&#9776;</span>' +
         '<input type="checkbox" ' + (t.done ? "checked" : "") + " />" +
         '<span class="tasktitle"></span>' +
         '<span class="badge ' + t.priority + '">' + t.priority + "</span>" +

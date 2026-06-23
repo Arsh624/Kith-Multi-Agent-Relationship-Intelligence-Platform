@@ -30,6 +30,10 @@ class PersonListItem(BaseModel):
     favorite: bool = False
 
 
+class ReorderRequest(BaseModel):
+    ids: list[str]
+
+
 class PersonPatch(BaseModel):
     title: Optional[str] = None
     email: Optional[str] = None

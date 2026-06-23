@@ -37,13 +37,36 @@ def add_person(
 
 
 def list_people(db: Session, user_id: str) -> list[Person]:
-    return list(
-        db.scalars(
-            select(Person)
-            .where(Person.user_id == user_id)
-            .order_by(Person.name)
-        ).all()
+    people = db.scalars(
+        select(Person).where(Person.user_id == user_id)
+    ).all()
+    return sorted(
+        people,
+        key=lambda p: (
+            p.position is None,
+            p.position if p.position is not None else 0,
+            p.name.lower(),
+        ),
     )
+
+
+def reorder_people(
+    db: Session, user_id: str, ordered_ids: list[str]
+) -> list[Person]:
+    people = {
+        p.id: p
+        for p in db.scalars(
+            select(Person).where(Person.user_id == user_id)
+        ).all()
+    }
+    position = 0
+    for person_id in ordered_ids:
+        person = people.get(person_id)
+        if person is not None:
+            person.position = position
+            position += 1
+    db.commit()
+    return list_people(db, user_id)
 
 
 def delete_person(db: Session, user_id: str, person_id: str) -> bool:

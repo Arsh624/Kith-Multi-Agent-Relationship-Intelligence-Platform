@@ -77,3 +77,21 @@ def test_list_people_is_scoped_to_user(client):
 def test_list_people_requires_auth(client):
     response = client.get("/people")
     assert response.status_code in (401, 403)
+
+
+def test_reorder_people_persists_manual_order(client):
+    headers = {"Authorization": f"Bearer {_register(client, 'ro@example.com')}"}
+    ids = [
+        client.post("/people", headers=headers, json={"name": n}).json()["id"]
+        for n in ("Charlie", "Alice", "Bob")
+    ]
+    new_order = [ids[2], ids[0], ids[1]]
+
+    reordered = client.post(
+        "/people/reorder", headers=headers, json={"ids": new_order}
+    )
+    assert reordered.status_code == 200
+    assert [p["id"] for p in reordered.json()] == new_order
+
+    listed = client.get("/people", headers=headers).json()
+    assert [p["id"] for p in listed] == new_order

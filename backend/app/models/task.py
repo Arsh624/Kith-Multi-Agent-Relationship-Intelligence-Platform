@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime, timezone
 from typing import Optional
 
-from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -21,6 +21,7 @@ class Task(Base):
     deadline: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     priority: Mapped[str] = mapped_column(String, nullable=False, default="medium")
     done: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    position: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )

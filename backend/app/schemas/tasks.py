@@ -26,3 +26,7 @@ class TaskOut(BaseModel):
     priority: str
     done: bool
     created_at: datetime
+
+
+class ReorderRequest(BaseModel):
+    ids: list[str]

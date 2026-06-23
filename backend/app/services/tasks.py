@@ -33,6 +33,8 @@ def list_tasks(db: Session, user_id: str) -> list[Task]:
     return sorted(
         tasks,
         key=lambda t: (
+            t.position is None,
+            t.position if t.position is not None else 0,
             t.done,
             _PRIORITY_RANK.get(t.priority, 1),
             t.deadline is None,
@@ -40,6 +42,21 @@ def list_tasks(db: Session, user_id: str) -> list[Task]:
             t.created_at,
         ),
     )
+
+
+def reorder_tasks(db: Session, user_id: str, ordered_ids: list[str]) -> list[Task]:
+    tasks = {
+        t.id: t
+        for t in db.scalars(select(Task).where(Task.user_id == user_id)).all()
+    }
+    position = 0
+    for task_id in ordered_ids:
+        task = tasks.get(task_id)
+        if task is not None:
+            task.position = position
+            position += 1
+    db.commit()
+    return list_tasks(db, user_id)
 
 
 def set_task_done(

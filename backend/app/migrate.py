@@ -9,6 +9,8 @@ _ADDITIONS = [
     ("people", "color", "VARCHAR"),
     ("people", "favorite", "BOOLEAN"),
     ("companies", "color", "VARCHAR"),
+    ("people", "position", "INTEGER"),
+    ("tasks", "position", "INTEGER"),
 ]
 
 
