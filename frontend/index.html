@@ -646,6 +646,29 @@
       if (listEl.__reorderReady) return;
       listEl.__reorderReady = true;
       let dragged = null;
+      let lastY = 0;
+      let scrollRAF = null;
+
+      function reposition() {
+        const after = getDragAfterElement(listEl, lastY);
+        if (after == null) listEl.appendChild(dragged);
+        else listEl.insertBefore(dragged, after);
+      }
+      function autoScrollTick() {
+        if (!dragged) { scrollRAF = null; return; }
+        const EDGE = 90, MAX = 20;
+        const vh = window.innerHeight;
+        let dy = 0;
+        if (lastY < EDGE) dy = -Math.ceil((EDGE - lastY) / EDGE * MAX);
+        else if (lastY > vh - EDGE) dy = Math.ceil((lastY - (vh - EDGE)) / EDGE * MAX);
+        if (dy !== 0) {
+          const before = window.scrollY;
+          window.scrollBy(0, dy);
+          if (window.scrollY !== before) reposition();
+        }
+        scrollRAF = requestAnimationFrame(autoScrollTick);
+      }
+
       listEl.addEventListener("mousedown", function (e) {
         const handle = e.target.closest(".draghandle");
         if (handle) {
@@ -657,18 +680,20 @@
         const li = e.target.closest("li");
         if (!li || !li.draggable) return;
         dragged = li;
+        lastY = e.clientY;
         li.classList.add("dragging");
         e.dataTransfer.effectAllowed = "move";
         try { e.dataTransfer.setData("text/plain", li.dataset.id || ""); } catch (_) {}
+        if (!scrollRAF) scrollRAF = requestAnimationFrame(autoScrollTick);
       });
       listEl.addEventListener("dragover", function (e) {
         if (!dragged) return;
         e.preventDefault();
-        const after = getDragAfterElement(listEl, e.clientY);
-        if (after == null) listEl.appendChild(dragged);
-        else listEl.insertBefore(dragged, after);
+        lastY = e.clientY;
+        reposition();
       });
       listEl.addEventListener("dragend", function () {
+        if (scrollRAF) { cancelAnimationFrame(scrollRAF); scrollRAF = null; }
         if (!dragged) return;
         dragged.classList.remove("dragging");
         dragged.draggable = false;
