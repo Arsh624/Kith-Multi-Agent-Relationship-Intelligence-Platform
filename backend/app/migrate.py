@@ -11,6 +11,7 @@ _ADDITIONS = [
     ("companies", "color", "VARCHAR"),
     ("people", "position", "INTEGER"),
     ("tasks", "position", "INTEGER"),
+    ("people", "status", "VARCHAR"),
 ]
 
 

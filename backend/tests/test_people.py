@@ -79,6 +79,74 @@ def test_list_people_requires_auth(client):
     assert response.status_code in (401, 403)
 
 
+def _new_person(client, headers, name="Dana"):
+    return client.post("/people", headers=headers, json={"name": name}).json()
+
+
+def test_patch_person_sets_note_and_status(client):
+    headers = {"Authorization": f"Bearer {_register(client)}"}
+    person = _new_person(client, headers)
+
+    patched = client.patch(
+        f"/people/{person['id']}",
+        headers=headers,
+        json={"note": "asked for a referral", "status": "hot"},
+    )
+    assert patched.status_code == 200
+    body = patched.json()
+    assert body["note"] == "asked for a referral"
+    assert body["status"] == "hot"
+
+    detail = client.get(f"/people/{person['id']}", headers=headers).json()
+    assert detail["note"] == "asked for a referral"
+    assert detail["status"] == "hot"
+
+
+def test_list_people_includes_note_and_status(client):
+    headers = {"Authorization": f"Bearer {_register(client)}"}
+    person = _new_person(client, headers)
+    client.patch(
+        f"/people/{person['id']}",
+        headers=headers,
+        json={"note": "warm intro", "status": "warm"},
+    )
+
+    item = client.get("/people", headers=headers).json()[0]
+    assert item["note"] == "warm intro"
+    assert item["status"] == "warm"
+
+
+def test_person_status_defaults_to_none(client):
+    headers = {"Authorization": f"Bearer {_register(client)}"}
+    _new_person(client, headers)
+    item = client.get("/people", headers=headers).json()[0]
+    assert item["status"] is None
+    assert item["note"] is None
+
+
+def test_patch_person_status_can_be_cleared(client):
+    headers = {"Authorization": f"Bearer {_register(client)}"}
+    person = _new_person(client, headers)
+    client.patch(
+        f"/people/{person['id']}", headers=headers, json={"status": "cold"}
+    )
+
+    cleared = client.patch(
+        f"/people/{person['id']}", headers=headers, json={"status": ""}
+    )
+    assert cleared.status_code == 200
+    assert cleared.json()["status"] is None
+
+
+def test_patch_person_rejects_invalid_status(client):
+    headers = {"Authorization": f"Bearer {_register(client)}"}
+    person = _new_person(client, headers)
+    bad = client.patch(
+        f"/people/{person['id']}", headers=headers, json={"status": "lukewarm"}
+    )
+    assert bad.status_code == 400
+
+
 def test_reorder_people_persists_manual_order(client):
     headers = {"Authorization": f"Bearer {_register(client, 'ro@example.com')}"}
     ids = [

@@ -19,6 +19,7 @@ class PersonDetail(BaseModel):
     phone: Optional[str] = None
     linkedin: Optional[str] = None
     color: Optional[str] = None
+    status: Optional[str] = None
     favorite: bool = False
 
 
@@ -27,6 +28,8 @@ class PersonListItem(BaseModel):
     name: str
     title: Optional[str] = None
     company: Optional[str] = None
+    note: Optional[str] = None
+    status: Optional[str] = None
     favorite: bool = False
 
 
@@ -36,6 +39,8 @@ class ReorderRequest(BaseModel):
 
 class PersonPatch(BaseModel):
     title: Optional[str] = None
+    note: Optional[str] = None
+    status: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
     linkedin: Optional[str] = None

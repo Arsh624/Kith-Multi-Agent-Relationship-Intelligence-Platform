@@ -109,8 +109,9 @@
     .peopleform #ppname { flex: 1; min-width: 200px; }
     .peoplefilter { width: 100%; margin: 0 0 14px; }
     .peoplelist { list-style: none; padding: 0; margin: 0; }
-    .personrow { display: flex; align-items: center; gap: 13px; padding: 14px 4px;
+    .personrow { display: flex; flex-direction: column; padding: 14px 4px;
       border-bottom: 1px solid var(--border); }
+    .prowmain { display: flex; align-items: center; gap: 13px; }
     .pinfo { flex: 1; min-width: 0; display: flex; align-items: baseline;
       gap: 8px; flex-wrap: wrap; }
     .pname { font-weight: 600; }
@@ -118,6 +119,15 @@
     .pmeta { color: var(--dim); font-size: 13px; }
     .pactions { display: flex; gap: 4px; align-items: center; flex: 0 0 auto; }
     .pedit { padding: 5px 12px; font-weight: 600; }
+    .pstatus { flex: 0 0 auto; width: 15px; height: 15px; border-radius: 50%;
+      border: none; padding: 0; cursor: pointer; box-sizing: border-box; }
+    .pstatus.unset { background: transparent; border: 2px solid var(--faint); }
+    .pnote { padding: 5px 12px; font-weight: 600; }
+    .pnote.has-note::after { content: " •"; color: var(--accent); }
+    .pnotebox { display: none; margin: 10px 0 2px 28px; }
+    .pnotebox textarea { width: 100%; margin: 0; }
+    .pnoteactions { display: flex; gap: 8px; margin-top: 6px; }
+    .pnotesave { padding: 5px 12px; font-weight: 600; }
     .draghandle { cursor: grab; color: var(--faint); padding: 2px 8px; font-size: 15px;
       user-select: none; flex: 0 0 auto; line-height: 1; }
     .draghandle:hover { color: var(--text); }
@@ -509,25 +519,83 @@
         const li = document.createElement("li");
         li.className = "personrow";
         li.dataset.id = p.id;
-        li.innerHTML =
+
+        const main = document.createElement("div");
+        main.className = "prowmain";
+        main.innerHTML =
           (q ? "" : '<span class="draghandle" title="Drag to reorder">&#9776;</span>') +
+          '<button class="pstatus" type="button"></button>' +
           '<div class="pinfo">' +
             '<span class="pname"></span>' +
             (p.favorite ? '<span class="pstar">★</span>' : "") +
             '<span class="pmeta"></span>' +
           '</div>' +
           '<div class="pactions">' +
-            '<button class="secondary pedit">Edit</button>' +
-            '<button class="taskdel premove">remove</button>' +
+            '<button class="secondary pnote" type="button">Note</button>' +
+            '<button class="secondary pedit" type="button">Edit</button>' +
+            '<button class="taskdel premove" type="button">remove</button>' +
           '</div>';
-        li.querySelector(".pname").textContent = p.name;
-        li.querySelector(".pmeta").textContent =
+        main.querySelector(".pname").textContent = p.name;
+        main.querySelector(".pmeta").textContent =
           [p.title, p.company].filter(Boolean).join("  ·  ");
-        li.querySelector(".pedit").onclick = function () { openPersonCard(p.id); };
-        li.querySelector(".premove").onclick = function () { removePersonFromList(p.id, p.name); };
+        main.querySelector(".pedit").onclick = function () { openPersonCard(p.id); };
+        main.querySelector(".premove").onclick = function () { removePersonFromList(p.id, p.name); };
+
+        const statusBtn = main.querySelector(".pstatus");
+        applyStatusDot(statusBtn, p.status);
+        statusBtn.onclick = function () { cyclePersonStatus(p, statusBtn); };
+
+        const noteBtn = main.querySelector(".pnote");
+        if (p.note) noteBtn.classList.add("has-note");
+
+        const noteBox = document.createElement("div");
+        noteBox.className = "pnotebox";
+        noteBox.innerHTML =
+          '<textarea class="pnotetext" rows="2" placeholder="Note (e.g. asked for referral, met at meetup)"></textarea>' +
+          '<div class="pnoteactions">' +
+            '<button class="pnotesave" type="button">Save</button>' +
+            '<button class="secondary pnotecancel" type="button">Cancel</button>' +
+          '</div>';
+        const ta = noteBox.querySelector(".pnotetext");
+        ta.value = p.note || "";
+        noteBtn.onclick = function () {
+          const open = noteBox.style.display === "block";
+          noteBox.style.display = open ? "none" : "block";
+          if (!open) ta.focus();
+        };
+        noteBox.querySelector(".pnotecancel").onclick = function () {
+          ta.value = p.note || "";
+          noteBox.style.display = "none";
+        };
+        noteBox.querySelector(".pnotesave").onclick = async function () {
+          await api("/people/" + p.id, { method: "PATCH", body: JSON.stringify({ note: ta.value }) });
+          p.note = ta.value.trim() || null;
+          noteBtn.classList.toggle("has-note", !!p.note);
+          noteBox.style.display = "none";
+        };
+
+        li.appendChild(main);
+        li.appendChild(noteBox);
         list.appendChild(li);
       }
       setupReorder(list, reorderPeople);
+    }
+
+    const STATUS_ORDER = ["", "hot", "warm", "cold"];
+    const STATUS_COLORS = { "": "transparent", hot: "#d9434a", warm: "#c98b2c", cold: "#4f8fc4" };
+    const STATUS_LABELS = { "": "Not contacted", hot: "Hot", warm: "Warm", cold: "Cold" };
+    function applyStatusDot(btn, status) {
+      const s = STATUS_ORDER.indexOf(status || "") === -1 ? "" : (status || "");
+      btn.style.background = STATUS_COLORS[s];
+      btn.className = "pstatus" + (s ? "" : " unset");
+      btn.title = "Status: " + STATUS_LABELS[s] + " (click to change)";
+    }
+    async function cyclePersonStatus(p, btn) {
+      const cur = STATUS_ORDER.indexOf(p.status || "") === -1 ? "" : (p.status || "");
+      const next = STATUS_ORDER[(STATUS_ORDER.indexOf(cur) + 1) % STATUS_ORDER.length];
+      await api("/people/" + p.id, { method: "PATCH", body: JSON.stringify({ status: next }) });
+      p.status = next || null;
+      applyStatusDot(btn, p.status);
     }
     async function addPersonFromPeople() {
       const name = document.getElementById("ppname").value.trim();

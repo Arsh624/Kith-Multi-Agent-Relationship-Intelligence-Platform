@@ -27,6 +27,7 @@ class Person(Base):
         String, ForeignKey("messages.id"), nullable=True
     )
     color: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    status: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     favorite: Mapped[Optional[bool]] = mapped_column(
         Boolean, default=False, nullable=True
     )

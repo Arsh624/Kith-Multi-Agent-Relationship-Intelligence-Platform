@@ -75,6 +75,8 @@ def get_people(
             name=p.name,
             title=p.title,
             company=company_names.get(p.company_id),
+            note=p.note,
+            status=p.status,
             favorite=bool(p.favorite),
         )
         for p in people
@@ -100,6 +102,8 @@ def reorder_people_endpoint(
             name=p.name,
             title=p.title,
             company=company_names.get(p.company_id),
+            note=p.note,
+            status=p.status,
             favorite=bool(p.favorite),
         )
         for p in people
@@ -135,6 +139,7 @@ def _build_detail(db: Session, user_id: str, person: Person) -> PersonDetail:
         phone=contact.phone if contact is not None else None,
         linkedin=contact.linkedin if contact is not None else None,
         color=person.color,
+        status=person.status,
         favorite=bool(person.favorite),
     )
 
@@ -175,6 +180,15 @@ def update_person_detail(
         )
     if payload.title is not None:
         person.title = payload.title
+    if payload.note is not None:
+        person.note = payload.note or None
+    if payload.status is not None:
+        if payload.status not in ("", "hot", "warm", "cold"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Status must be hot, warm, cold, or empty.",
+            )
+        person.status = payload.status or None
     if payload.color is not None:
         person.color = payload.color or None
     if payload.favorite is not None:
