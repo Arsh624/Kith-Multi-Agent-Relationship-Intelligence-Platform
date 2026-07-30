@@ -28,6 +28,14 @@ def update_company(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Company not found"
         )
+    if payload.name is not None:
+        new_name = payload.name.strip()
+        if not new_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Company name cannot be empty.",
+            )
+        company.name = new_name
     if payload.color is not None:
         company.color = payload.color or None
     db.commit()

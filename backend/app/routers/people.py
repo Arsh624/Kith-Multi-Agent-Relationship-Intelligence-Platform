@@ -15,6 +15,7 @@ from app.schemas.people import (
     PersonPatch,
     ReorderRequest,
 )
+from app.services.companies import get_or_create_company
 from app.services.contacts import get_contact, upsert_contact
 from app.services.people import (
     KnownThroughNotFound,
@@ -178,6 +179,22 @@ def update_person_detail(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Person not found"
         )
+    if payload.name is not None:
+        new_name = payload.name.strip()
+        if not new_name:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Name cannot be empty.",
+            )
+        person.name = new_name
+    if payload.company is not None:
+        if payload.company.strip():
+            company = get_or_create_company(
+                db, current_user.id, payload.company
+            )
+            person.company_id = company.id
+        else:
+            person.company_id = None
     if payload.title is not None:
         person.title = payload.title
     if payload.note is not None:

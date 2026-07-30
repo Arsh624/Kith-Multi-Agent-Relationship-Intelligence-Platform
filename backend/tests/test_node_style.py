@@ -55,3 +55,38 @@ def test_person_defaults_have_no_color_and_not_favorite(client):
     node = next(n for n in graph["nodes"] if n["label"] == "Plain")
     assert node["color"] is None
     assert node["favorite"] is False
+
+
+def test_patch_company_rename(client):
+    headers = _register(client)
+    client.post(
+        "/people", headers=headers, json={"name": "Dipunj", "company": "Cloudflare"}
+    )
+    graph = client.get("/graph", headers=headers).json()
+    company_node = next(n for n in graph["nodes"] if n["type"] == "company")
+    company_id = company_node["id"].split(":", 1)[1]
+
+    patched = client.patch(
+        f"/companies/{company_id}", headers=headers, json={"name": "Cloudflare Inc"}
+    )
+    assert patched.status_code == 200
+    assert patched.json()["name"] == "Cloudflare Inc"
+
+    graph = client.get("/graph", headers=headers).json()
+    node = next(n for n in graph["nodes"] if n["id"] == company_node["id"])
+    assert node["label"] == "Cloudflare Inc"
+
+
+def test_patch_company_rejects_blank_name(client):
+    headers = _register(client)
+    client.post(
+        "/people", headers=headers, json={"name": "Dipunj", "company": "Cloudflare"}
+    )
+    graph = client.get("/graph", headers=headers).json()
+    company_id = next(
+        n["id"].split(":", 1)[1] for n in graph["nodes"] if n["type"] == "company"
+    )
+    resp = client.patch(
+        f"/companies/{company_id}", headers=headers, json={"name": "  "}
+    )
+    assert resp.status_code == 400

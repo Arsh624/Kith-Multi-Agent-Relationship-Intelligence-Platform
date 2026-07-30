@@ -38,6 +38,8 @@ class ReorderRequest(BaseModel):
 
 
 class PersonPatch(BaseModel):
+    name: Optional[str] = None
+    company: Optional[str] = None
     title: Optional[str] = None
     note: Optional[str] = None
     status: Optional[str] = None

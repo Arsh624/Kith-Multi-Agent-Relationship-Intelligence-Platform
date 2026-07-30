@@ -4,6 +4,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from app.models.connection import Connection
+from app.models.contact import Contact
 from app.models.person import Person
 from app.services.companies import get_or_create_company
 from app.services.connections import add_connection
@@ -86,6 +87,13 @@ def delete_person(db: Session, user_id: str, person_id: str) -> bool:
     ).all()
     for connection in connections:
         db.delete(connection)
+    contact = db.scalar(
+        select(Contact).where(
+            Contact.user_id == user_id, Contact.person_id == person_id
+        )
+    )
+    if contact is not None:
+        db.delete(contact)
     db.delete(person)
     db.commit()
     return True

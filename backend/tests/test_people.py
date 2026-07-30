@@ -147,6 +147,77 @@ def test_patch_person_rejects_invalid_status(client):
     assert bad.status_code == 400
 
 
+def test_patch_person_renames_and_sets_company(client):
+    headers = {"Authorization": f"Bearer {_register(client)}"}
+    person = _new_person(client, headers, name="Dana")
+
+    patched = client.patch(
+        f"/people/{person['id']}",
+        headers=headers,
+        json={"name": "Dana Scully", "company": "Acme"},
+    )
+    assert patched.status_code == 200
+    assert patched.json()["name"] == "Dana Scully"
+    assert patched.json()["company"] == "Acme"
+
+    graph = client.get("/graph", headers=headers).json()
+    labels = {n["label"] for n in graph["nodes"]}
+    assert "Dana Scully" in labels
+    assert "Dana" not in labels
+    assert "Acme" in labels
+
+
+def test_patch_person_rejects_blank_name(client):
+    headers = {"Authorization": f"Bearer {_register(client)}"}
+    person = _new_person(client, headers, name="Dana")
+    resp = client.patch(
+        f"/people/{person['id']}", headers=headers, json={"name": "   "}
+    )
+    assert resp.status_code == 400
+
+
+def test_patch_person_can_clear_company(client):
+    headers = {"Authorization": f"Bearer {_register(client)}"}
+    created = client.post(
+        "/people", headers=headers, json={"name": "Dana", "company": "Acme"}
+    ).json()
+
+    cleared = client.patch(
+        f"/people/{created['id']}", headers=headers, json={"company": ""}
+    )
+    assert cleared.status_code == 200
+    assert cleared.json()["company"] is None
+
+
+def _contact_count(person_id):
+    from app.database import SessionLocal
+    from app.models.contact import Contact
+
+    session = SessionLocal()
+    try:
+        return session.query(Contact).filter_by(person_id=person_id).count()
+    finally:
+        session.close()
+
+
+def test_delete_person_also_deletes_their_contact(client):
+    # A person with saved contact info has a contacts row whose FK points at
+    # the person. Deleting the person must remove that row, or the delete
+    # raises a foreign key error (a 500) on a FK-enforcing database.
+    headers = {"Authorization": f"Bearer {_register(client)}"}
+    person = _new_person(client, headers)
+    client.patch(
+        f"/people/{person['id']}",
+        headers=headers,
+        json={"email": "dana@example.com"},
+    )
+    assert _contact_count(person["id"]) == 1
+
+    resp = client.delete(f"/people/{person['id']}", headers=headers)
+    assert resp.status_code == 204
+    assert _contact_count(person["id"]) == 0
+
+
 def test_reorder_people_persists_manual_order(client):
     headers = {"Authorization": f"Bearer {_register(client, 'ro@example.com')}"}
     ids = [

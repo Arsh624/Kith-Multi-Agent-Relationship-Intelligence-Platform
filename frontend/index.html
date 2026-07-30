@@ -401,7 +401,10 @@
         </div>
         <button class="taskdel" onclick="closeCard()">close</button>
       </div>
-      <div id="cardCompany" class="muted"></div>
+      <label class="cardlabel">Name</label>
+      <input id="cardNameInput" placeholder="name" />
+      <label class="cardlabel">Company</label>
+      <input id="cardCompanyInput" placeholder="company (leave blank to remove)" />
       <label class="cardlabel">Role</label>
       <input id="cardTitle" placeholder="e.g. SDE1, Recruiter" />
       <label class="cardlabel">Email</label>
@@ -426,6 +429,11 @@
       <div class="cardhead">
         <strong id="companyCardName"></strong>
         <button class="taskdel" onclick="closeCompanyCard()">close</button>
+      </div>
+      <label class="cardlabel">Name</label>
+      <div class="cardrow">
+        <input id="companyNameInput" placeholder="company name" />
+        <button onclick="saveCompanyName()">Save</button>
       </div>
       <label class="cardlabel">Node color</label>
       <div class="cardrow">
@@ -1043,7 +1051,8 @@
       document.getElementById("companyCard").style.display = "none";
       const d = await api("/people/" + personId);
       document.getElementById("cardName").textContent = d.name;
-      document.getElementById("cardCompany").textContent = d.company || "";
+      document.getElementById("cardNameInput").value = d.name || "";
+      document.getElementById("cardCompanyInput").value = d.company || "";
       document.getElementById("cardTitle").value = d.title || "";
       document.getElementById("cardEmail").value = d.email || "";
       document.getElementById("cardPhone").value = d.phone || "";
@@ -1089,6 +1098,7 @@
       cardCompanyId = companyId;
       document.getElementById("personCard").style.display = "none";
       document.getElementById("companyCardName").textContent = name;
+      document.getElementById("companyNameInput").value = name || "";
       const data = nodeById["company:" + companyId];
       document.getElementById("companyColor").value =
         (data && data.color) || NODE_DEFAULTS.company.bg;
@@ -1111,10 +1121,25 @@
       document.getElementById("companyColor").value = NODE_DEFAULTS.company.bg;
       loadGraph();
     }
+    async function saveCompanyName() {
+      if (!cardCompanyId) return;
+      const name = document.getElementById("companyNameInput").value;
+      const status = document.getElementById("companyCardStatus");
+      status.textContent = "Saving...";
+      try {
+        await api("/companies/" + cardCompanyId, { method: "PATCH", body: JSON.stringify({ name: name }) });
+        document.getElementById("companyCardName").textContent = name.trim();
+        status.textContent = "Saved.";
+        loadGraph();
+        refreshPeopleIfVisible();
+      } catch (e) { status.textContent = e.message || "Save failed."; }
+    }
 
     async function savePersonCard() {
       if (!cardPersonId) return;
       const body = {
+        name: document.getElementById("cardNameInput").value,
+        company: document.getElementById("cardCompanyInput").value,
         title: document.getElementById("cardTitle").value,
         email: document.getElementById("cardEmail").value,
         phone: document.getElementById("cardPhone").value,

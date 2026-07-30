@@ -5,6 +5,7 @@ from pydantic import BaseModel
 
 class CompanyPatch(BaseModel):
     color: Optional[str] = None
+    name: Optional[str] = None
 
 
 class CompanyOut(BaseModel):
