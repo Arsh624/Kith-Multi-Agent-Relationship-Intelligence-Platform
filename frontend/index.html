@@ -341,6 +341,9 @@
         <button class="iconbtn danger" title="Delete the selected node" onclick="deleteSelected()">&#128465;</button>
       </div>
       <div class="tgroup">
+        <input id="mapFind" placeholder="find on map" oninput="findOnMap()" onkeydown="if(event.key==='Enter')findOnMap()" />
+      </div>
+      <div class="tgroup">
         <input id="searchQuery" placeholder="search by meaning" onkeydown="if(event.key==='Enter')runSearch()" />
         <button onclick="runSearch()">Search</button>
       </div>
@@ -986,6 +989,26 @@
           .map(function (r) { return r.name + (r.company ? " (" + r.company + ")" : ""); })
           .join(", ");
       } catch (e) { status.textContent = e.message || "Search failed."; }
+    }
+
+    let lastFindId = null;
+    function findOnMap() {
+      const q = document.getElementById("mapFind").value.trim().toLowerCase();
+      if (!q || !network || !nodesDS) { lastFindId = null; return; }
+      const nodes = nodesDS.get();
+      const name = function (n) { return (n.plainName || n.label || "").toLowerCase(); };
+      const match =
+        nodes.find(function (n) { return name(n) === q; }) ||
+        nodes.find(function (n) { return name(n).indexOf(q) === 0; }) ||
+        nodes.find(function (n) { return name(n).indexOf(q) !== -1; });
+      if (!match) { lastFindId = null; return; }
+      if (match.id === lastFindId) return;
+      lastFindId = match.id;
+      network.selectNodes([match.id]);
+      network.focus(match.id, {
+        scale: 1.35,
+        animation: { duration: 500, easingFunction: "easeInOutQuad" },
+      });
     }
 
     async function findPaths() {
