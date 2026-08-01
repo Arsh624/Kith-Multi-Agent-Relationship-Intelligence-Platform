@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.task import Task
@@ -16,11 +16,19 @@ def create_task(
     deadline: Optional[date],
     priority: str = "medium",
 ) -> Task:
+    # New tasks go to the top of the list without renumbering existing
+    # (manually reordered) tasks: give them a position below the current
+    # minimum. Lower position sorts higher.
+    min_position = db.scalar(
+        select(func.min(Task.position)).where(Task.user_id == user_id)
+    )
+    position = (min_position - 1) if min_position is not None else -1
     task = Task(
         user_id=user_id,
         title=title,
         deadline=deadline,
         priority=priority or "medium",
+        position=position,
     )
     db.add(task)
     db.commit()
@@ -33,9 +41,9 @@ def list_tasks(db: Session, user_id: str) -> list[Task]:
     return sorted(
         tasks,
         key=lambda t: (
+            t.done,
             t.position is None,
             t.position if t.position is not None else 0,
-            t.done,
             _PRIORITY_RANK.get(t.priority, 1),
             t.deadline is None,
             t.deadline or date.max,

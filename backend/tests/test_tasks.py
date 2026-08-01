@@ -6,6 +6,7 @@ from app.services.tasks import (
     create_task,
     delete_task,
     list_tasks,
+    reorder_tasks,
     set_task_done,
 )
 
@@ -26,25 +27,40 @@ def test_create_task_defaults_to_medium_and_not_done(db_session):
     assert task.deadline is None
 
 
-def test_list_orders_open_first_then_priority_then_deadline(db_session):
+def test_new_tasks_list_newest_first_and_done_sinks(db_session):
     user = _make_user(db_session)
-    low = create_task(db_session, user.id, "low", None, "low")
-    high = create_task(db_session, user.id, "high", None, "high")
-    medium = create_task(db_session, user.id, "medium", None, "medium")
-    done = create_task(db_session, user.id, "done", None, "high")
+    create_task(db_session, user.id, "first", None, "low")
+    create_task(db_session, user.id, "second", None, "low")
+    create_task(db_session, user.id, "third", None, "low")
+    done = create_task(db_session, user.id, "done", None, "low")
     set_task_done(db_session, user.id, done.id, True)
 
     ordered = [t.title for t in list_tasks(db_session, user.id)]
-    assert ordered == ["high", "medium", "low", "done"]
+    # newest active task on top, completed tasks sink to the bottom
+    assert ordered == ["third", "second", "first", "done"]
 
 
-def test_deadline_sorts_before_no_deadline_within_priority(db_session):
+def test_new_task_listed_before_older_regardless_of_priority(db_session):
     user = _make_user(db_session)
-    no_deadline = create_task(db_session, user.id, "someday", None, "medium")
-    soon = create_task(db_session, user.id, "soon", date(2026, 6, 20), "medium")
+    create_task(db_session, user.id, "old high", None, "high")
+    create_task(db_session, user.id, "new low", None, "low")
 
     ordered = [t.title for t in list_tasks(db_session, user.id)]
-    assert ordered == ["soon", "someday"]
+    # insertion order wins: a brand new task is on top even if lower priority
+    assert ordered == ["new low", "old high"]
+
+
+def test_new_task_goes_above_manually_placed_without_moving_them(db_session):
+    user = _make_user(db_session)
+    a = create_task(db_session, user.id, "a", None, "medium")
+    b = create_task(db_session, user.id, "b", None, "medium")
+    reorder_tasks(db_session, user.id, [a.id, b.id])
+
+    create_task(db_session, user.id, "c", None, "medium")
+
+    ordered = [t.title for t in list_tasks(db_session, user.id)]
+    # the new task sits on top; the manually ordered a, b keep their order
+    assert ordered == ["c", "a", "b"]
 
 
 def test_set_task_done_and_delete(db_session):

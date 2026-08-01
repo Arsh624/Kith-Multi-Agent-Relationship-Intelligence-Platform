@@ -157,6 +157,10 @@
       font-size: 12px; cursor: pointer; background: var(--surface); color: var(--text);
       border: 1px solid var(--border-strong); letter-spacing: .04em; opacity: .85; }
     .fsbtn:hover { opacity: 1; }
+    .mapfind { position: absolute; top: 12px; left: 12px; z-index: 30; width: 210px;
+      max-width: 45vw; padding: 8px 12px; font-size: 13px; background: var(--surface);
+      color: var(--text); border: 1px solid var(--border-strong); opacity: .9; }
+    .mapfind:focus { opacity: 1; }
     #cyWrap:fullscreen { background: #000; }
     #cyWrap:fullscreen #cy { height: 100vh; border: none; }
 
@@ -341,9 +345,6 @@
         <button class="iconbtn danger" title="Delete the selected node" onclick="deleteSelected()">&#128465;</button>
       </div>
       <div class="tgroup">
-        <input id="mapFind" placeholder="find on map" oninput="findOnMap()" onkeydown="if(event.key==='Enter')findOnMap()" />
-      </div>
-      <div class="tgroup">
         <input id="searchQuery" placeholder="search by meaning" onkeydown="if(event.key==='Enter')runSearch()" />
         <button onclick="runSearch()">Search</button>
       </div>
@@ -377,6 +378,8 @@
     </div>
 
     <div id="cyWrap">
+      <input id="mapFind" class="mapfind" placeholder="Find on map" autocomplete="off"
+        oninput="findOnMap()" onkeydown="if(event.key==='Enter')findOnMap()" />
       <button id="fsBtn" class="fsbtn" onclick="toggleGraphFullscreen()" title="Full screen">Full screen</button>
       <div id="cy"></div>
     </div>
