@@ -9,7 +9,13 @@ class Neo4jGraphStore(GraphStore):
     ) -> None:
         from neo4j import GraphDatabase
 
-        self._driver = GraphDatabase.driver(uri, auth=(username, password))
+        # Fail fast when Aura is paused/unreachable instead of retrying for ~60s.
+        self._driver = GraphDatabase.driver(
+            uri,
+            auth=(username, password),
+            connection_timeout=5,
+            max_transaction_retry_time=5,
+        )
         self._database = database or None
 
     def close(self) -> None:

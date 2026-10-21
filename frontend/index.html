@@ -1018,9 +1018,8 @@
       const company = document.getElementById("introCompany").value.trim();
       const status = document.getElementById("pathStatus");
       if (!company) { status.textContent = "Enter a company."; return; }
-      status.textContent = "Syncing and searching...";
+      status.textContent = "Searching...";
       try {
-        await api("/graph/sync", { method: "POST" });
         const result = await api("/intro-paths?company=" + encodeURIComponent(company));
         if (!result.paths.length) {
           status.textContent = "No warm path to " + company + " found.";

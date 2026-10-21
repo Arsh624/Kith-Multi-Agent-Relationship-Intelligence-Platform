@@ -122,6 +122,25 @@ def test_sync_then_intro_paths_endpoint(client):
         app.dependency_overrides.pop(get_graph_store, None)
 
 
+def test_intro_paths_works_without_neo4j_sync(client):
+    # Paths must be computed from Postgres, not Neo4j, so the feature keeps
+    # working (and stays fast) even when the graph database is unreachable.
+    token = _register(client, "nosync@example.com")
+    headers = {"Authorization": f"Bearer {token}"}
+    client.post(
+        "/people", headers=headers, json={"name": "Dipunj", "company": "Cloudflare"}
+    )
+    client.post(
+        "/people",
+        headers=headers,
+        json={"name": "Rahul", "company": "Qualcomm", "known_through": "Dipunj"},
+    )
+
+    response = client.get("/intro-paths?company=Qualcomm", headers=headers)
+    assert response.status_code == 200
+    assert ["You", "Dipunj", "Rahul", "Qualcomm"] in response.json()["paths"]
+
+
 def test_intro_paths_requires_auth(client):
     response = client.get("/intro-paths?company=Qualcomm")
     assert response.status_code in (401, 403)
