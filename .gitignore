@@ -12,3 +12,5 @@ qdrant_local/
 docs/superpowers/
 DESIGN.md
 Kith.png
+backups/
+*kith-backup*.json

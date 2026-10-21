@@ -13,6 +13,7 @@ import app.models  # noqa: F401  registers all model tables
 from app.routers import (
     auth,
     companies,
+    export,
     graph,
     health,
     intro,
@@ -60,6 +61,7 @@ app.include_router(intro.router)
 app.include_router(companies.router)
 app.include_router(tasks.router)
 app.include_router(search.router)
+app.include_router(export.router)
 
 FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend"
 app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")

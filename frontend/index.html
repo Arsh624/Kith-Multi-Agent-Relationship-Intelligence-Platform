@@ -244,6 +244,24 @@
       color: var(--dim); letter-spacing: .04em; }
     .pwtoggle:hover { color: var(--text); }
     .authbtns { display: flex; gap: 8px; margin-top: 8px; }
+    .modal { position: relative; }
+    .modal input { margin: 0; }
+    .authclose { position: absolute; top: 14px; right: 14px; background: none; border: none;
+      color: var(--dim); font-size: 22px; line-height: 1; cursor: pointer; padding: 2px 6px; }
+    .authclose:hover { color: var(--text); }
+    .auth-brand { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 26px;
+      letter-spacing: -.04em; line-height: 1; margin-bottom: 16px; }
+    .auth-title { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+    .auth-sub { color: var(--dim); font-size: 13px; margin: 0 0 18px; }
+    .auth-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; color: var(--dim); margin: 14px 0 5px; }
+    .auth-primary { width: 100%; margin-top: 20px; padding: 11px; font-weight: 600; font-size: 15px; }
+    .auth-error { min-height: 16px; margin: 10px 0 0; font-size: 13px; }
+    .auth-toggle { text-align: center; font-size: 13px; color: var(--dim); margin: 14px 0 0; }
+    .auth-toggle a { color: var(--accent); text-decoration: none; font-weight: 600; margin-left: 4px; }
+    .auth-toggle a:hover { text-decoration: underline; }
+    .auth-reassure { text-align: center; font-size: 11px; color: var(--faint); margin: 16px 0 0; }
+    .auth-reassure a { color: var(--dim); }
   </style>
 </head>
 <body>
@@ -296,22 +314,32 @@
 
   <div id="authModal" onclick="if(event.target===this)closeAuth()">
     <div class="modal">
-      <div class="modal-head">
-        <span id="authTitle" class="display">Welcome back</span>
-        <button class="ghost" onclick="closeAuth()">&times;</button>
-      </div>
-      <input id="email" type="email" placeholder="email" />
+      <button class="authclose" onclick="closeAuth()" aria-label="Close">&times;</button>
+      <div class="auth-brand">Kith</div>
+      <h2 id="authTitle" class="auth-title">Welcome back</h2>
+      <p id="authSubtitle" class="auth-sub">Sign in to your relationship graph.</p>
+
+      <label class="auth-label" for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" placeholder="you@example.com"
+        onkeydown="if(event.key==='Enter')submitAuth()" />
+
+      <label class="auth-label" for="password">Password</label>
       <div class="pwwrap">
-        <input id="password" type="password" placeholder="password" />
+        <input id="password" type="password" autocomplete="current-password" placeholder="Your password"
+          onkeydown="if(event.key==='Enter')submitAuth()" />
         <button type="button" id="pwToggle" class="pwtoggle" title="Show password"
           onclick="togglePassword()">Show</button>
       </div>
-      <div class="authbtns">
-        <button onclick="login()">Log in</button>
-        <button class="secondary" onclick="register()">Register</button>
-      </div>
-      <p class="muted">First time here? Press Register. Coming back? Press Log in.</p>
-      <p id="authError" class="error"></p>
+
+      <button id="authPrimary" class="auth-primary" onclick="submitAuth()">Log in</button>
+      <p id="authError" class="error auth-error"></p>
+
+      <p class="auth-toggle">
+        <span id="authToggleText">New to Kith?</span>
+        <a href="#" id="authToggleLink" onclick="toggleAuthMode();return false;">Create an account</a>
+      </p>
+      <p class="auth-reassure">Private to your account.
+        <a href="privacy.html" target="_blank" rel="noopener">Privacy &amp; terms</a></p>
     </div>
   </div>
 
@@ -358,6 +386,7 @@
           </div>
           <button class="secondary" onclick="syncGraph()">Sync graph to Neo4j</button>
           <button class="secondary" onclick="reindexSearch()">Reindex search</button>
+          <button class="secondary" onclick="exportData()">Export my data (backup)</button>
         </div>
       </details>
       <span id="addStatus" class="muted"></span>
@@ -874,10 +903,25 @@
       wrap.innerHTML = '<div class="track">' + row + row + "</div>";
     }
 
-    function openAuth(mode) {
-      const title = document.getElementById("authTitle");
-      if (title) title.textContent = mode === "register" ? "Create your account" : "Welcome back";
+    let authMode = "login";
+    function setAuthMode(mode) {
+      authMode = mode === "register" ? "register" : "login";
+      const isReg = authMode === "register";
+      document.getElementById("authTitle").textContent = isReg ? "Create your account" : "Welcome back";
+      document.getElementById("authSubtitle").textContent = isReg
+        ? "Start mapping your network in seconds."
+        : "Sign in to your relationship graph.";
+      document.getElementById("authPrimary").textContent = isReg ? "Create account" : "Log in";
+      document.getElementById("authToggleText").textContent = isReg ? "Already have an account?" : "New to Kith?";
+      document.getElementById("authToggleLink").textContent = isReg ? "Log in" : "Create an account";
+      document.getElementById("password").setAttribute("autocomplete", isReg ? "new-password" : "current-password");
       document.getElementById("authError").textContent = "";
+    }
+    function toggleAuthMode() { setAuthMode(authMode === "login" ? "register" : "login"); }
+    function submitAuth() { auth(authMode === "register" ? "/auth/register" : "/auth/login"); }
+
+    function openAuth(mode) {
+      setAuthMode(mode === "register" ? "register" : "login");
       document.getElementById("authModal").classList.add("open");
       setTimeout(function () { document.getElementById("email").focus(); }, 30);
     }
@@ -978,6 +1022,26 @@
         const r = await api("/search/reindex", { method: "POST" });
         status.textContent = "Indexed " + r.indexed + " people.";
       } catch (e) { status.textContent = e.message || "Reindex failed."; }
+    }
+
+    async function exportData() {
+      const status = document.getElementById("searchStatus");
+      status.textContent = "Preparing backup...";
+      try {
+        const data = await api("/export");
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "kith-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        status.textContent =
+          "Backup downloaded (" + data.people.length + " people, " +
+          data.connections.length + " connections).";
+      } catch (e) { status.textContent = e.message || "Export failed."; }
     }
 
     async function runSearch() {
