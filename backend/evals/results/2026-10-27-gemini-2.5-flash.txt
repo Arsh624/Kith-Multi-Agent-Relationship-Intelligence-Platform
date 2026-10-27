@@ -1,0 +1,19 @@
+# Extraction eval run, 2026-10-27, model gemini-2.5-flash, 12 labeled cases (evals/cases.py)
+# Command: cd backend && python evals/run_evals.py
+Case  1: people f1=1.00 companies f1=1.00 rels f1=1.00
+Case  2: people f1=1.00 companies f1=1.00 rels f1=1.00
+Case  3: people f1=1.00 companies f1=1.00 rels f1=0.00
+Case  4: people f1=1.00 companies f1=1.00 rels f1=1.00
+Case  5: people f1=1.00 companies f1=1.00 rels f1=1.00
+Case  6: people f1=1.00 companies f1=1.00 rels f1=1.00
+Case  7: people f1=1.00 companies f1=1.00 rels f1=1.00
+Case  8: people f1=1.00 companies f1=1.00 rels f1=1.00
+Case  9: people f1=1.00 companies f1=1.00 rels f1=1.00
+Case 10: people f1=1.00 companies f1=1.00 rels f1=1.00
+Case 11: people f1=1.00 companies f1=1.00 rels f1=1.00
+Case 12: people f1=1.00 companies f1=1.00 rels f1=1.00
+
+Aggregate over 12 of 12 cases:
+  people         precision=1.00 recall=1.00 f1=1.00
+  companies      precision=1.00 recall=1.00 f1=1.00
+  relationships  precision=0.92 recall=1.00 f1=0.92
