@@ -19,6 +19,9 @@ class VectorStore(Protocol):
     ) -> list[SearchHit]:
         ...
 
+    def indexed_ids(self, user_id: str) -> set[str]:
+        ...
+
 
 def _cosine(a: list[float], b: list[float]) -> float:
     dot = sum(x * y for x, y in zip(a, b))
@@ -47,6 +50,9 @@ class FakeVectorStore:
         scored.sort(key=lambda h: h.score, reverse=True)
         return scored[:limit]
 
+    def indexed_ids(self, user_id: str) -> set[str]:
+        return set(self._data.get(user_id, {}))
+
 
 class QdrantVectorStore:
     def __init__(self, path: str, collection: str = "people") -> None:
@@ -54,6 +60,10 @@ class QdrantVectorStore:
 
         self._client = QdrantClient(path=path)
         self._collection = collection
+
+    def _exists(self) -> bool:
+        names = [c.name for c in self._client.get_collections().collections]
+        return self._collection in names
 
     def _ensure(self, dim: int) -> None:
         from qdrant_client.models import Distance, VectorParams
@@ -104,3 +114,25 @@ class QdrantVectorStore:
             SearchHit(person_id=str(point.id), score=point.score)
             for point in response.points
         ]
+
+    def indexed_ids(self, user_id: str) -> set[str]:
+        from qdrant_client.models import FieldCondition, Filter, MatchValue
+
+        if not self._exists():
+            return set()
+        ids: set[str] = set()
+        offset = None
+        while True:
+            points, offset = self._client.scroll(
+                collection_name=self._collection,
+                scroll_filter=Filter(
+                    must=[FieldCondition(key="user_id", match=MatchValue(value=user_id))]
+                ),
+                limit=256,
+                offset=offset,
+                with_payload=False,
+                with_vectors=False,
+            )
+            ids.update(str(point.id) for point in points)
+            if offset is None:
+                return ids

@@ -1051,7 +1051,7 @@
       status.textContent = "Searching...";
       try {
         const data = await api("/search?q=" + encodeURIComponent(q));
-        if (!data.results.length) { status.textContent = "No matches. Try Reindex first."; return; }
+        if (!data.results.length) { status.textContent = "No matches."; return; }
         status.textContent = data.results
           .map(function (r) { return r.name + (r.company ? " (" + r.company + ")" : ""); })
           .join(", ");
