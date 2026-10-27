@@ -142,7 +142,7 @@
     details.tools > summary { list-style: none; cursor: pointer; font-weight: 600; color: var(--text);
       background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: 10px; padding: 9px 15px; }
     details.tools > summary::-webkit-details-marker { display: none; }
-    .toolsmenu { position: absolute; z-index: 20; margin-top: 8px; min-width: 250px; display: flex;
+    .toolsmenu { position: absolute; z-index: 60; margin-top: 8px; min-width: 250px; display: flex;
       flex-direction: column; gap: 8px; padding: 12px; background: var(--surface);
       border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
     .toolrow { display: flex; gap: 6px; }
@@ -379,9 +379,9 @@
       <details class="tools">
         <summary>Tools</summary>
         <div class="toolsmenu">
-          <button class="ghost" onclick="togglePaste()">Import from a message</button>
+          <button class="secondary" onclick="togglePaste()">Import from a message</button>
           <div class="toolrow">
-            <input id="introCompany" placeholder="who can get me into... (company)" onkeydown="if(event.key==='Enter')findPaths()" />
+            <input id="introCompany" placeholder="Company to get into" onkeydown="if(event.key==='Enter')findPaths()" />
             <button onclick="findPaths()">Paths</button>
           </div>
           <button class="secondary" onclick="syncGraph()">Sync graph to Neo4j</button>
