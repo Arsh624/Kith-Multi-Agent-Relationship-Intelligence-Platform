@@ -400,6 +400,10 @@
     </div>
 
     <div id="paste">
+      <div class="cardhead">
+        <strong>Import from a message</strong>
+        <button class="taskdel" title="Close" onclick="closePaste()">close</button>
+      </div>
       <input id="source" placeholder="source (email, linkedin, ...)" value="email" />
       <textarea id="text" rows="4" placeholder="Paste an email or message and let AI extract people and companies..."></textarea>
       <button onclick="paste()">Extract</button>
@@ -973,6 +977,9 @@
     function togglePaste() {
       const p = document.getElementById("paste");
       p.style.display = p.style.display === "block" ? "none" : "block";
+    }
+    function closePaste() {
+      document.getElementById("paste").style.display = "none";
     }
 
     async function addPerson() {
